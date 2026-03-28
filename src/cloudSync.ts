@@ -13,6 +13,7 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 import * as http from 'http';
 import { SessionSummary } from './sessionStore';
+import { BehavioralSnapshot, CognitiveReport } from './types';
 
 const SECRET_KEY_TOKEN    = 'zn_token';
 const SECRET_KEY_ANON_ID  = 'zn_anon_id';
@@ -104,6 +105,45 @@ export class CloudSyncService {
             return { ok: false, error: res.body?.detail ?? 'Invalid invite code' };
         }
         return { ok: true, teamName: res.body.name };
+    }
+
+    // ── LLM Intervention ────────────────────────────────────────────────────
+
+    async requestIntervention(
+        snapshot: BehavioralSnapshot,
+        report: CognitiveReport,
+    ): Promise<string | null> {
+        const token = await this._secrets.get(SECRET_KEY_TOKEN);
+        if (!token) { return null; }
+
+        const m = report.metrics;
+        const res = await this._post(
+            this.getCloudUrl(),
+            '/api/v1/intervention',
+            {
+                score:            report.score,
+                state:            report.state,
+                switch_rate:      m.switchRate,
+                error_rate:       m.errorRate,
+                undo_rate:        m.undoRate,
+                idle_ratio:       m.idleRatio,
+                paste_ratio:      m.pasteRatio,
+                keystrokes:       snapshot.keystrokes,
+                backspaces:       snapshot.backspaces,
+                tab_switches:     snapshot.tabSwitches,
+                undos:            snapshot.undos,
+                idle_seconds:     snapshot.idleMs / 1000,
+                duration_seconds: snapshot.durationMs / 1000,
+                pasted_chars:     snapshot.pastedChars,
+                total_chars:      snapshot.totalChars,
+            },
+            token,
+        );
+
+        if (res.ok && res.body?.intervention) {
+            return res.body.intervention as string;
+        }
+        return null;
     }
 
     async disconnect(): Promise<void> {

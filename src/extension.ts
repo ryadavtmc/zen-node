@@ -17,7 +17,6 @@ import { TraceCollector } from './traceCollector';
 import { CognitiveScorer } from './scorer';
 import { SessionStore } from './sessionStore';
 import { CloudSyncService } from './cloudSync';
-import { BackendClient } from './backendClient';
 import { showConnectWizard } from './connectWizard';
 import { ZenBar } from './zenBar';
 import { ThemeShifter } from './themeShifter';
@@ -30,7 +29,6 @@ let traceCollector: TraceCollector;
 let scorer: CognitiveScorer;
 let sessionStore: SessionStore;
 let cloudSync: CloudSyncService;
-let backendClient: BackendClient;
 let zenBar: ZenBar;
 let themeShifter: ThemeShifter;
 let mainLoopInterval: ReturnType<typeof setInterval> | null = null;
@@ -86,7 +84,6 @@ export function activate(context: vscode.ExtensionContext): void {
     scorer         = new CognitiveScorer();
     sessionStore   = new SessionStore(context.globalStorageUri.fsPath);
     cloudSync      = new CloudSyncService(context);
-    backendClient  = new BackendClient(cfg.backendUrl);
     zenBar         = new ZenBar();
     themeShifter   = new ThemeShifter();
 
@@ -156,21 +153,12 @@ async function runOneTick(): Promise<void> {
         const snapshot = traceCollector.flush();
         const report   = scorer.score(snapshot);
 
-        // ── Layer B: fetch LLM intervention from backend if enabled ──────────
+        // ── Layer B: fetch LLM intervention from cloud if enabled ───────────
         if (cfg.enableLLM && report.score >= cfg.criticalThreshold) {
-            const backendReport = await backendClient.sendSnapshot(snapshot);
-            if (backendReport?.intervention) {
-                report.intervention = backendReport.intervention;
+            const intervention = await cloudSync.requestIntervention(snapshot, report);
+            if (intervention) {
+                report.intervention = intervention;
                 console.log('[ZenNode] LLM intervention received:', report.intervention);
-                if (cfg.showNotifications) {
-                    vscode.window.showInformationMessage(
-                        `🤖 AI Insight: ${report.intervention}`,
-                        '🫁 Breathe', '📊 Dashboard'
-                    ).then(action => {
-                        if (action === '🫁 Breathe')    { vscode.commands.executeCommand('zennode.showBreathingExercise'); }
-                        if (action === '📊 Dashboard') { vscode.commands.executeCommand('zennode.showDashboard'); }
-                    });
-                }
             }
         }
 
@@ -389,7 +377,6 @@ function getConfig() {
     const cfg = vscode.workspace.getConfiguration('zennode');
     return {
         enabled:          cfg.get<boolean>('enabled', true),
-        backendUrl:       cfg.get<string>('backendUrl', 'http://127.0.0.1:8420'),
         sampleIntervalMs: cfg.get<number>('sampleIntervalMs', 5000),
         enableThemeShift: cfg.get<boolean>('enableThemeShift', true),
         enableLLM:        cfg.get<boolean>('enableLLM', false),
@@ -402,6 +389,5 @@ function getConfig() {
 function onConfigChange(): void {
     const cfg = getConfig();
     if (mainLoopInterval) { startMainLoop(cfg.sampleIntervalMs); }
-    backendClient = new BackendClient(cfg.backendUrl);
     console.log('[ZenNode] Config reloaded.');
 }

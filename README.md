@@ -29,10 +29,10 @@ Mental health tooling only works if developers *trust* it. The moment an employe
 |---|---|
 | **Scoring runs 100% locally** | The TypeScript scorer (`src/scorer.ts`) runs inside the extension process — no data leaves your machine for cognitive scoring |
 | **Counts only, never content** | `traceCollector.ts` records *how many* keystrokes, never *what* you typed. File names, variable names, and source code are never accessed |
-| **LLM sees metadata, not code** | If Layer B (optional backend) is enabled, the AI receives only anonymized behavioral numbers: e.g., `"tabSwitches: 18, undos: 12"` — never source code |
+| **LLM sees metadata, not code** | If Layer B (optional cloud) is enabled, the AI receives only anonymized behavioral numbers: e.g., `"tabSwitches: 18, undos: 12"` — never source code |
 | **Team sync is opt-in and anonymized** | Cloud sync only activates after you choose to connect. Only aggregated session summaries are shared, identified by a random `anonymous_id` — never your name or email |
 | **No telemetry, ever** | ZenNode has no analytics, no crash reporting, no phone-home. It cannot phone home because it has no such code |
-| **Local session storage** | Sessions are stored in VS Code's global storage and optionally `backend/zennode.db` on your own disk — fully under your control, never uploaded without consent |
+| **Local session storage** | Sessions are stored in VS Code's global storage as JSON — fully under your control, never uploaded without consent |
 | **You can audit it** | The entire codebase is open source. Every privacy claim above can be verified line-by-line |
 
 **The rule of thumb:** If ZenNode can't do its job knowing only *counts* and *timing*, it doesn't ask for more.
@@ -71,7 +71,7 @@ In 2026, AI-assisted coding made developers 10x faster at *producing* code — b
 
 ZenNode is a VS Code extension that monitors your **behavioral biomarkers** — typing patterns, tab-switching frequency, undo rates, idle gaps, paste-without-edit patterns — and detects when your brain is struggling, *before you realize it yourself*.
 
-All cognitive scoring runs **locally in TypeScript** — no server required. The Python backend and cloud sync are optional layers you can add for LLM-powered interventions and team health insights.
+All cognitive scoring runs **locally in TypeScript** — no server required. The cloud is an optional layer you can add for LLM-powered interventions and team health insights.
 
 ### The Four Cognitive States
 
@@ -113,7 +113,7 @@ Rich webview with score gauge, per-metric bars, session timeline chart, state ti
 - **Recovery celebrations** — positive reinforcement when you return to flow 🎉
 
 ### 🤖 LLM-Powered Interventions (Layer B — Optional)
-When you hit the red zone, an AI (Groq/OpenAI-compatible) generates a **context-aware, CBT-based message** — like a caring colleague, not a therapist. ≤30 words, actionable, never preachy. Requires the optional Python backend. The LLM sees behavioral metadata only, **never your source code**.
+When you hit the red zone, an AI (Groq/OpenAI-compatible) generates a **context-aware, CBT-based message** — like a caring colleague, not a therapist. ≤30 words, actionable, never preachy. Requires the optional cloud API. The LLM sees behavioral metadata only, **never your source code**.
 
 ### 👥 Team Health Sync (Optional)
 Connect to your team's ZenNode cloud to share **anonymized** session summaries. See if your team's collective cognitive load is trending up — with full privacy (never raw behavioral data, never source code). Opt-in only: the connection wizard appears after 3 completed sessions.
@@ -140,145 +140,73 @@ ZenNode is designed in three independent layers. You can use just Layer A — th
 │  └──────┬────────┘                                              │
 │         │               ┌──────────────┐  ┌───────────────────┐ │
 │  ┌──────▼────────┐       │ sessionStore │  │  connectWizard.ts │ │
-│  │ backendClient │       │    .ts       │  │  (Team opt-in     │ │
-│  │ (optional)    │       │  (JSON/disk) │  │   wizard)         │ │
+│  │  cloudSync.ts │       │    .ts       │  │  (Team opt-in     │ │
+│  │  (optional)   │       │  (JSON/disk) │  │   wizard)         │ │
 │  └──────┬────────┘       └──────────────┘  └─────────┬─────────┘ │
 └─────────┼──────────────────────────────────────────── │ ──────────┘
-          │  HTTP POST (optional)                        │
+          │  HTTP (optional, JWT auth)                   │
           ▼                                              ▼
-┌──────────────────────────────┐   ┌─────────────────────────────┐
-│  Python Backend (FastAPI     │   │  Cloud API (FastAPI          │
-│  :8420) — OPTIONAL           │   │  :8421) — OPTIONAL           │
-│                              │   │                              │
-│  scorer.py  (mirrors Layer A)│   │  auth.py (signup/login)      │
-│  llm_interpreter.py (Layer B)│   │  sessions sync               │
-│  session.py (SQLite)         │   │  team health aggregation     │
-│  database.py (zennode.db)    │   │  privacy-preserving only     │
-│  cloud_sync.py               │   │                              │
-└──────────────────────────────┘   └─────────────────────────────┘
+          ┌─────────────────────────────────────────────┐
+          │  Cloud API (FastAPI :8421) — OPTIONAL        │
+          │                                              │
+          │  auth.py       — signup / login (JWT)        │
+          │  llm_interpreter.py — CBT interventions      │
+          │  routes/       — team dashboard, sync        │
+          │  database.py   — SQLite (zennode_cloud.db)   │
+          └─────────────────────────────────────────────┘
 ```
 
 **Three-layer design:**
 - **Layer A** — deterministic TypeScript math, runs inside the extension, always on, zero latency
-- **Layer B** — optional Python backend + LLM for deep interpretation at score ≥ 80
-- **Layer C** — optional cloud for team health visibility (anonymized, privacy-first)
+- **Layer B** — optional cloud API (LLM interventions at score ≥ 80, JWT auth, team health)
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Local Setup
 
-### Prerequisites
+**Requirements:** VS Code ≥ 1.85, Node.js ≥ 18, Python ≥ 3.10
 
-- **VS Code** ≥ 1.85.0
-- **Node.js** ≥ 18
-- **Python** ≥ 3.10 *(only if using the optional backend)*
-
-### 1. Clone & Install
+### Layer A — Extension only (no server needed)
 
 ```bash
-git clone https://github.com/your-org/zen-node.git
+git clone https://github.com/ryadavtmc/zen-node.git
 cd zen-node
-
-# Install extension dependencies
 npm install
 ```
 
-### 2. Launch the Extension
-
-Press **F5** in VS Code to open the Extension Development Host.
-
-You should see the Zen Bar appear in your status bar: **🧠 ZenNode: Flow (0) 🟢**
-
-> The extension works fully without the Python backend — cognitive scoring runs locally in TypeScript.
-
-### 3. Verify
-
-Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and try:
-- `ZenNode: Show Cognitive Dashboard` — opens the live dashboard
-- `ZenNode: Breathing Exercise` — launches the guided breathing panel
-- `ZenNode: Reset Session` — clears and archives the current session
-- `ZenNode: Toggle Tracking` — pause/resume monitoring
+Press **F5** in VS Code → Extension Development Host opens.
+The Zen Bar appears in the status bar: **🧠 ZenNode: Flow (0) 🟢**
 
 ---
 
-## 🖥️ Running the Optional Python Backend
-
-The Python backend adds LLM-powered interventions (Layer B). The extension works without it.
-
-### Step 1 — Navigate to the backend directory
+### Layer B — Cloud (adds LLM interventions + team sync)
 
 ```bash
-cd zen-node/backend
-```
-
-### Step 2 — Create and activate the virtual environment
-
-**macOS / Linux:**
-```bash
+cd cloud
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-**Windows (PowerShell):**
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-### Step 3 — Install Python dependencies
-
-```bash
 pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 8421 --reload
 ```
 
-Installs: `fastapi`, `uvicorn`, `pydantic`, `openai`, `httpx`, `python-dotenv`.
+---
 
-### Step 4 — Configure LLM (required for Layer B)
+### Verify it works
 
-```bash
-cp .env.example .env
-```
+Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
+- `ZenNode: Show Cognitive Dashboard`
+- `ZenNode: Breathing Exercise`
+- `ZenNode: Reset Session`
 
-Edit `backend/.env`:
+Cloud health check: `curl http://127.0.0.1:8421/health`
 
-```env
-LLM_API_KEY=gsk_your_groq_api_key_here
-LLM_MODEL=llama-3.3-70b-versatile
-LLM_BASE_URL=https://api.groq.com/openai/v1
-LLM_ENABLED=true
-```
+**Troubleshooting**
 
-| Provider | `LLM_BASE_URL` | Notes |
-|---|---|---|
-| **Groq** | `https://api.groq.com/openai/v1` | Free tier available, very fast |
-| **OpenAI** | `https://api.openai.com/v1` | Use `gpt-4o-mini` for low cost |
-| **Ollama** (local) | `http://localhost:11434/v1` | Fully offline, no API key needed |
-| **Together AI** | `https://api.together.xyz/v1` | Many open models |
-
-### Step 5 — Start the server
-
-```bash
-uvicorn main:app --host 127.0.0.1 --port 8420 --reload
-```
-
-You should see:
-```
-🧠 ZenNode Cognitive Engine starting on port 8420...
-INFO:     Uvicorn running on http://127.0.0.1:8420 (Press CTRL+C to quit)
-```
-
-### Step 6 — Enable backend in VS Code settings
-
-Set `zennode.backendUrl` to `http://127.0.0.1:8420` (default) and ensure the extension is pointed at the running server.
-
-### Troubleshooting
-
-| Problem | Likely Cause | Fix |
-|---|---|---|
-| `Address already in use` | Port 8420 is taken | `lsof -i :8420` then `kill <PID>` |
-| `ModuleNotFoundError` | venv not activated | Run `source .venv/bin/activate` then `pip install -r requirements.txt` |
-| LLM inactive | `.env` missing or `LLM_ENABLED=false` | Copy `.env.example` to `.env` and fill in your key |
-| LLM calls timing out | Bad API key | Check your key in `.env`, or set `LLM_ENABLED=false` |
+| Problem | Fix |
+|---|---|
+| `Address already in use` | `lsof -i :8421` → `kill <PID>` |
+| `ModuleNotFoundError` | Activate venv: `source .venv/bin/activate` |
+| LLM not triggering | Check `cloud/.env` exists and `LLM_ENABLED=true` |
 
 ---
 
@@ -324,7 +252,7 @@ S = 0.25·SwitchRate + 0.20·ErrorRate + 0.25·UndoRate + 0.15·IdleRatio + 0.15
 
 Smoothed with an **Exponential Moving Average** (α = 0.6) to prevent jitter. Score gently decays toward 0 when you step away (keystrokes < 3).
 
-The algorithm runs identically in TypeScript (`src/scorer.ts`) and Python (`backend/scorer.py`) for consistency.
+The algorithm runs entirely in TypeScript (`src/scorer.ts`) inside the extension — no server required.
 
 ---
 
@@ -335,10 +263,10 @@ All settings are under `zennode.*` in VS Code settings:
 | Setting | Default | Description |
 |---|---|---|
 | `zennode.enabled` | `true` | Enable/disable cognitive load monitoring |
-| `zennode.backendUrl` | `http://127.0.0.1:8420` | URL of the optional FastAPI backend |
+| `zennode.backendUrl` | `http://127.0.0.1:8421` | URL of the optional cloud API |
 | `zennode.sampleIntervalMs` | `5000` | How often (ms) to compute and send behavioral snapshots |
 | `zennode.enableThemeShift` | `true` | Auto-shift colors to warm amber at high load |
-| `zennode.enableLLM` | `false` | Enable LLM-powered interventions (requires backend) |
+| `zennode.enableLLM` | `false` | Enable LLM-powered interventions (requires cloud) |
 | `zennode.warningThreshold` | `50` | Score that triggers yellow warning |
 | `zennode.criticalThreshold` | `80` | Score that triggers red alert + theme shift |
 | `zennode.showNotifications` | `true` | Show supportive notification messages |
@@ -367,19 +295,7 @@ zen-node/
 │   ├── cloudSync.ts          ← Optional team sync (anonymized sessions, JWT auth)
 │   └── connectWizard.ts      ← Team connection wizard (opt-in, after 3 sessions)
 │
-├── backend/                  ← Python Cognitive Engine (FastAPI :8420) — OPTIONAL
-│   ├── main.py               ← FastAPI app + routes
-│   ├── scorer.py             ← Python mirror of Layer A scoring algorithm
-│   ├── llm_interpreter.py    ← LLM integration (Layer B, Groq/OpenAI/Ollama)
-│   ├── models.py             ← Pydantic models (mirrors TypeScript types)
-│   ├── thresholds.py         ← Tunable constants (weights, caps, thresholds)
-│   ├── session.py            ← SQLite-backed session tracker
-│   ├── database.py           ← SQLite connection + schema management (zennode.db)
-│   ├── cloud_sync.py         ← Backend side of team cloud sync
-│   ├── requirements.txt      ← Python dependencies
-│   └── .env.example          ← LLM config template
-│
-├── cloud/                    ← Team Cloud API (FastAPI) — OPTIONAL, separate service
+├── cloud/                    ← Team Cloud API (FastAPI :8421) — OPTIONAL
 │   ├── main.py               ← Cloud FastAPI app
 │   ├── auth.py               ← Signup, login, token management
 │   ├── database.py           ← Cloud DB (zennode_cloud.db)
@@ -389,28 +305,30 @@ zen-node/
 │   └── requirements.txt      ← Cloud service dependencies
 │
 └── .vscode/
-    └── launch.json           ← Debug configs (Extension / Backend / compound F5)
+    └── launch.json           ← Debug configs (Extension + optional Cloud)
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
-The optional Python backend exposes:
+### Cloud API (`:8421`)
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | Health check |
-| `POST` | `/api/v1/snapshot` | Submit behavioral snapshot → receive cognitive report |
-| `POST` | `/api/v1/reset` | Reset session (archives current, clears EMA) |
-| `GET` | `/api/v1/status` | Current score + state without new data |
-| `GET` | `/api/v1/session/timeline?last_n=N` | Session timeline entries |
-| `GET` | `/api/v1/session/summary` | Aggregated session stats |
-| `GET` | `/api/v1/session/history` | Past archived sessions |
-| `POST` | `/api/v1/cloud/connect` | Connect to team cloud |
-| `POST` | `/api/v1/cloud/sync` | Push anonymized session to cloud |
+| `POST` | `/auth/signup` | Create developer account |
+| `POST` | `/auth/login` | Authenticate, get JWT |
+| `GET` | `/auth/me` | Current user info |
+| `POST` | `/teams/create` | Create team, become manager |
+| `POST` | `/teams/join` | Join team via invite code |
+| `GET` | `/teams/me` | Your team info |
+| `GET` | `/teams/members` | List members (manager only) |
+| `POST` | `/sync/session` | Push anonymized session summary |
+| `GET` | `/dashboard/team` | Team overview (manager only) |
+| `GET` | `/dashboard/team/trend` | Daily trend (manager only) |
+| `POST` | `/api/v1/intervention` | Get LLM intervention (score ≥ 80) |
 
-Interactive docs: `http://127.0.0.1:8420/docs` (Swagger) · `http://127.0.0.1:8420/redoc` (ReDoc)
+Interactive docs: `http://127.0.0.1:8421/docs`
 
 ---
 
@@ -456,10 +374,10 @@ See the [Privacy Is the Foundation](#-privacy-is-the-foundation) section above f
 ## 🗺️ Roadmap
 
 ### Phase 1: "The Vitals" ← **Complete** ✅
-Local cognitive scoring, Zen Bar, theme shift, breathing exercise, dashboard, session persistence, notifications, optional LLM backend, optional team cloud sync.
+Local cognitive scoring, Zen Bar, theme shift, breathing exercise, dashboard, session persistence, notifications, LLM interventions via cloud, team sync.
 
 ### Phase 2: "The Intelligence Layer"
-- Connect extension live to backend LLM for real-time interventions
+- Deeper LLM context-awareness (e.g. stuck on same file 10+ min)
 - Contextual summaries when stuck 10+ min
 - AI suggestion throttling (tell Copilot to slow down when fatigued)
 - Weekly flow reports with best-hours analysis
@@ -483,37 +401,24 @@ npm run watch
 # Launch extension in debug mode
 # Press F5 in VS Code (uses .vscode/launch.json)
 
-# Start optional backend
-cd backend && source .venv/bin/activate && uvicorn main:app --port 8420 --reload
-
-# Compound launch (extension + backend simultaneously)
-# Use "Full ZenNode (Extension + Backend)" config in .vscode/launch.json
+# Start cloud (LLM + team sync)
+cd cloud && source .venv/bin/activate && uvicorn main:app --port 8421 --reload
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Backend Smoke Test
+### Cloud Smoke Test
 
 ```bash
 # Health check
-curl http://127.0.0.1:8420/health
-# → {"status":"ok","service":"zennode-cognitive-engine","version":"0.1.0"}
+curl http://127.0.0.1:8421/health
 
-# Send a calm snapshot (expect flow)
-curl -s -X POST http://127.0.0.1:8420/api/v1/snapshot \
+# Sign up and get a JWT, then test the intervention endpoint
+curl -s -X POST http://127.0.0.1:8421/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"keystrokes":200,"backspaces":10,"tabSwitches":2,"undos":0,"idleMs":1000,"pastedChars":0,"totalChars":200,"durationMs":30000}'
-# → score < 30, state = "flow"
-
-# Send 3x stress snapshots (expect overload by 3rd)
-for i in 1 2 3; do
-  curl -s -X POST http://127.0.0.1:8420/api/v1/snapshot \
-    -H "Content-Type: application/json" \
-    -d '{"keystrokes":80,"backspaces":60,"tabSwitches":25,"undos":15,"idleMs":12000,"pastedChars":300,"totalChars":350,"durationMs":30000}' | python -m json.tool
-done
-# → score > 80, state = "overload", themeShift = true
+  -d '{"email":"test@example.com","password":"test1234","display_name":"Test"}'
 ```
 
 ### Extension E2E (Manual)
@@ -525,6 +430,30 @@ done
 5. Check notification appears with "🫁 Breathe" button
 6. Open Dashboard via Command Palette → verify gauge + timeline
 7. Reset session → confirm bar returns to 🟢, theme reverts
+
+---
+
+## 🛠️ Technologies Used
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| VS Code Extension | TypeScript | Behavioral signal collection, local scoring, UI (status bar, webviews) |
+| Local Scorer | Pure TypeScript math | Weighted EMA cognitive load algorithm — zero dependencies, zero latency |
+| Cloud API | FastAPI + Uvicorn | LLM interventions, auth, team health aggregation, anonymized session sync |
+| Database | SQLite + SQLAlchemy | Local session persistence and cloud team data |
+| LLM Integration | OpenAI-compatible API | Groq (default), OpenAI, or Ollama for CBT-grounded interventions |
+| Auth | JWT (python-jose) + bcrypt | Secure developer accounts and team access on cloud |
+| Data Validation | Pydantic v2 | Shared schemas between extension and Python backends |
+| Extension Packaging | @vscode/vsce | Build and distribute `.vsix` extension packages |
+
+---
+
+## 👥 Team
+
+| Name | Role |
+|---|---|
+| Ravi Yadav | Developer |
+| Himanshu Jha | Developer |
 
 ---
 

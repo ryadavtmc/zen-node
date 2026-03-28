@@ -198,6 +198,7 @@ function _html(defaultCloudUrl: string): string {
       if (msg.type === 'authSuccess') {
         document.getElementById('step-auth').classList.remove('active');
         document.getElementById('step-team').classList.add('active');
+        setLoading(false);
       } else if (msg.type === 'error') {
         const errEl = document.getElementById(
           document.getElementById('step-team').classList.contains('active')
