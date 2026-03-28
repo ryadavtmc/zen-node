@@ -197,6 +197,9 @@ Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 - `ZenNode: Show Cognitive Dashboard`
 - `ZenNode: Breathing Exercise`
 - `ZenNode: Reset Session`
+- `ZenNode: Toggle Tracking`
+- `ZenNode: Connect to Team`
+- `ZenNode: Disconnect from Team`
 
 Cloud health check: `curl http://127.0.0.1:8421/health`
 
@@ -263,8 +266,7 @@ All settings are under `zennode.*` in VS Code settings:
 | Setting | Default | Description |
 |---|---|---|
 | `zennode.enabled` | `true` | Enable/disable cognitive load monitoring |
-| `zennode.backendUrl` | `http://127.0.0.1:8421` | URL of the optional cloud API |
-| `zennode.sampleIntervalMs` | `5000` | How often (ms) to compute and send behavioral snapshots |
+| `zennode.sampleIntervalMs` | `5000` | How often (ms) to send behavioral snapshots to the backend |
 | `zennode.enableThemeShift` | `true` | Auto-shift colors to warm amber at high load |
 | `zennode.enableLLM` | `false` | Enable LLM-powered interventions (requires cloud) |
 | `zennode.warningThreshold` | `50` | Score that triggers yellow warning |
@@ -277,7 +279,7 @@ All settings are under `zennode.*` in VS Code settings:
 
 ```
 zen-node/
-├── package.json              ← Extension manifest (6 commands, 8 settings)
+├── package.json              ← Extension manifest (6 commands, 7 settings)
 ├── tsconfig.json             ← TypeScript config (ES2022, strict)
 ├── assets/
 │   └── icon.png              ← Extension icon

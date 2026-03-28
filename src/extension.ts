@@ -154,10 +154,12 @@ async function runOneTick(): Promise<void> {
         const report   = scorer.score(snapshot);
 
         // ── Layer B: fetch LLM intervention from cloud if enabled ───────────
-        if (cfg.enableLLM && report.score >= cfg.criticalThreshold) {
+        if (cfg.enableLLM && report.state === 'overload') {
             const intervention = await cloudSync.requestIntervention(snapshot, report);
             if (intervention) {
                 report.intervention = intervention;
+                // Reset notification cooldown so LLM message is always shown
+                lastNotificationTime = 0;
                 console.log('[ZenNode] LLM intervention received:', report.intervention);
             }
         }
