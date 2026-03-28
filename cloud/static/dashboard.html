@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenNode — Manager Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3e;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --accent:    #6366f1;
+      --flow:      #22c55e;
+      --friction:  #eab308;
+      --fatigue:   #f97316;
+      --overload:  #ef4444;
+      --radius:    12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Login Screen ── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-card h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .login-card p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .auth-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 0;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .auth-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    .success-msg {
+      color: var(--flow);
+      font-size: 13px;
+      margin-top: 12px;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: var(--accent); }
+
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 11px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      color: var(--overload);
+      font-size: 13px;
+      margin-top: 12px;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    /* ── App Shell ── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo span { color: var(--accent); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .logout-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .logout-btn:hover { border-color: var(--overload); color: var(--overload); }
+
+    main {
+      flex: 1;
+      padding: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Section heading ── */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-head h2 { font-size: 16px; font-weight: 600; }
+
+    .refresh-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Stats Cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+    }
+
+    .card-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .card-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── Score color helpers ── */
+    .score-flow     { color: var(--flow); }
+    .score-friction { color: var(--friction); }
+    .score-fatigue  { color: var(--fatigue); }
+    .score-overload { color: var(--overload); }
+
+    /* ── Charts row ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 768px) {
+      .charts-row { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .chart-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .donut-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+    }
+
+    .donut-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .donut-center .big { font-size: 26px; font-weight: 700; }
+    .donut-center .small { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .donut-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin-top: 16px;
+      justify-content: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Members Table ── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .table-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 10px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 12px 20px;
+      font-size: 14px;
+    }
+
+    .state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-flow     { background: #14532d33; color: var(--flow); }
+    .badge-friction { background: #71350033; color: var(--friction); }
+    .badge-fatigue  { background: #7c2d1233; color: var(--fatigue); }
+    .badge-overload { background: #7f1d1d33; color: var(--overload); }
+    .badge-unknown  { background: #1e293b; color: var(--muted); }
+
+    .empty-row td {
+      text-align: center;
+      color: var(--muted);
+      padding: 32px;
+      font-size: 14px;
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Invite code chip ── */
+    .invite-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 10px;
+      font-family: monospace;
+      font-size: 13px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .invite-chip:hover { border-color: var(--accent); }
+    .invite-chip[title]::after { content: " 📋"; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🧠 ZenNode</h1>
+    <p>Manager Dashboard — sign in or create an account</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign in</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign up</button>
+    </div>
+
+    <!-- Sign In -->
+    <div id="panel-login">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="manager@company.com" autocomplete="username" />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+
+      <button class="btn" id="login-btn" onclick="login()">Sign in</button>
+      <div class="error-msg" id="login-error"></div>
+    </div>
+
+    <!-- Sign Up -->
+    <div id="panel-signup" style="display:none">
+      <label for="su-name">Display name</label>
+      <input type="text" id="su-name" placeholder="Jane Smith" />
+
+      <label for="su-email">Email</label>
+      <input type="email" id="su-email" placeholder="manager@company.com" autocomplete="username" />
+
+      <label for="su-password">Password <span style="color:var(--muted);font-weight:400">(min 8 chars)</span></label>
+      <input type="password" id="su-password" placeholder="••••••••" autocomplete="new-password" />
+
+      <button class="btn" id="signup-btn" onclick="signup()">Create account</button>
+      <div class="error-msg" id="signup-error"></div>
+    </div>
+
+    <!-- Create Team (shown after signup if no team) -->
+    <div id="panel-create-team" style="display:none">
+      <p style="margin-bottom:20px">Account created! Now name your team to become a manager.</p>
+      <label for="team-name">Team name</label>
+      <input type="text" id="team-name" placeholder="e.g. Platform Engineering" />
+
+      <button class="btn" id="create-team-btn" onclick="createTeam()">Create team &amp; continue</button>
+      <div class="error-msg" id="create-team-error"></div>
+      <div class="success-msg" id="create-team-success"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════════ -->
+<div id="app">
+  <header>
+    <div class="logo">Zen<span>Node</span></div>
+    <div class="header-right">
+      <span id="team-name-header"></span>
+      <span id="invite-code-chip" class="invite-chip" title="Click to copy invite code"></span>
+      <span id="refresh-status" class="refresh-label"></span>
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Stats cards -->
+    <div class="section-head">
+      <h2>Team Overview</h2>
+      <span id="last-updated" class="refresh-label"></span>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-label">Avg Score Today</div>
+        <div class="card-value" id="stat-score">—</div>
+        <div class="card-sub" id="stat-score-sub">loading…</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Team Members</div>
+        <div class="card-value" id="stat-members">—</div>
+        <div class="card-sub">active on team</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Overloads Today</div>
+        <div class="card-value" id="stat-overloads">—</div>
+        <div class="card-sub" id="stat-overloads-sub">loading…</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Burnout Risk</div>
+        <div class="card-value" id="stat-burnout">—</div>
+        <div class="card-sub">members avg score &gt; 70</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <!-- Donut: state distribution -->
+      <div class="chart-card">
+        <h3>State Distribution Today</h3>
+        <div class="donut-wrap">
+          <canvas id="donut-chart"></canvas>
+          <div class="donut-center">
+            <div class="big" id="donut-pct">—</div>
+            <div class="small">in flow</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--flow)"></div>Flow</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--friction)"></div>Friction</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--fatigue)"></div>Fatigue</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--overload)"></div>Overload</div>
+        </div>
+      </div>
+
+      <!-- Line: 14-day trend -->
+      <div class="chart-card">
+        <h3>14-Day Score Trend</h3>
+        <canvas id="trend-chart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Members table -->
+    <div class="section-head">
+      <h2>Members</h2>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Role</th>
+            <th>Avg Score (latest session)</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody id="members-tbody">
+          <tr class="empty-row"><td colspan="4"><span class="spinner"></span> Loading members…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════════
+const API = window.location.origin;  // same origin as this page
+const REFRESH_INTERVAL_MS = 30_000;
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+let token = localStorage.getItem('zn_token') || null;
+let donutChart = null;
+let trendChart = null;
+let refreshTimer = null;
+
+// ═══════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  if (token) {
+    showApp();
+  }
+
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+  document.getElementById('su-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') signup();
+  });
+  document.getElementById('team-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createTeam();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════
+async function login() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('login-btn');
+  const errEl    = document.getElementById('login-error');
+
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errEl.textContent = data.detail || 'Login failed';
+      return;
+    }
+
+    if (data.role !== 'manager') {
+      errEl.textContent = 'This dashboard is for managers only.';
+      return;
+    }
+
+    token = data.access_token;
+    localStorage.setItem('zn_token', token);
+    showApp();
+
+  } catch (e) {
+    errEl.textContent = 'Cannot reach server. Is the cloud API running?';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+
+function switchTab(tab) {
+  document.getElementById('panel-login').style.display       = tab === 'login'  ? '' : 'none';
+  document.getElementById('panel-signup').style.display      = tab === 'signup' ? '' : 'none';
+  document.getElementById('panel-create-team').style.display = 'none';
+  document.getElementById('tab-login').classList.toggle('active',  tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+}
+
+async function signup() {
+  const name     = document.getElementById('su-name').value.trim();
+  const email    = document.getElementById('su-email').value.trim();
+  const password = document.getElementById('su-password').value;
+  const btn      = document.getElementById('signup-btn');
+  const errEl    = document.getElementById('signup-error');
+
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Email and password are required.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
+
+  try {
+    const anonId = crypto.randomUUID();
+    const res = await fetch(`${API}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, anonymous_id: anonId, display_name: name || null }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Signup failed'; return; }
+
+    token = data.access_token;
+    localStorage.setItem('zn_token', token);
+
+    // Show create-team panel
+    document.getElementById('panel-signup').style.display      = 'none';
+    document.getElementById('panel-create-team').style.display = '';
+    document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
+  } catch (e) {
+    errEl.textContent = 'Cannot reach server.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+  }
+}
+
+async function createTeam() {
+  const name   = document.getElementById('team-name').value.trim();
+  const btn    = document.getElementById('create-team-btn');
+  const errEl  = document.getElementById('create-team-error');
+  const succEl = document.getElementById('create-team-success');
+
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Team name is required.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating team…';
+
+  try {
+    const res = await fetch(`${API}/teams/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Team creation failed'; return; }
+
+    succEl.textContent = `Team "${data.name}" created! Invite code: ${data.invite_code}`;
+    setTimeout(() => showApp(), 1200);
+  } catch (e) {
+    errEl.textContent = 'Cannot reach server.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create team & continue';
+  }
+}
+
+function logout() {
+  token = null;
+  localStorage.removeItem('zn_token');
+  clearInterval(refreshTimer);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// APP SHELL
+// ═══════════════════════════════════════════════════════════════════════
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  initCharts();
+  loadAll();
+
+  // Auto-refresh every 30s
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(loadAll, REFRESH_INTERVAL_MS);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════════════════════════════════
+async function apiFetch(path) {
+  const res = await fetch(`${API}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 401) { logout(); return null; }
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function loadAll() {
+  setRefreshStatus('Refreshing…');
+  const [overview, trend, members, myTeam] = await Promise.all([
+    apiFetch('/dashboard/team'),
+    apiFetch('/dashboard/team/trend?days=14'),
+    apiFetch('/teams/members'),
+    apiFetch('/teams/me'),
+  ]);
+
+  if (overview) renderOverview(overview);
+  if (trend)    renderTrend(trend);
+  if (members)  renderMembers(members);
+  if (myTeam)   renderTeamInfo(myTeam);
+
+  const now = new Date().toLocaleTimeString();
+  document.getElementById('last-updated').textContent = `Updated ${now}`;
+  setRefreshStatus('');
+}
+
+function setRefreshStatus(msg) {
+  document.getElementById('refresh-status').innerHTML =
+    msg ? `<span class="spinner"></span> ${msg}` : '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDERERS
+// ═══════════════════════════════════════════════════════════════════════
+function renderTeamInfo(team) {
+  document.getElementById('team-name-header').textContent = team.name;
+
+  const chip = document.getElementById('invite-code-chip');
+  chip.textContent = team.invite_code;
+  chip.title = 'Click to copy invite code';
+  chip.onclick = () => {
+    navigator.clipboard.writeText(team.invite_code);
+    chip.textContent = 'Copied!';
+    setTimeout(() => { chip.textContent = team.invite_code; }, 1500);
+  };
+}
+
+function renderOverview(d) {
+  const score = d.avg_team_score_today;
+  const scoreEl = document.getElementById('stat-score');
+  scoreEl.textContent = score.toFixed(1);
+  scoreEl.className = 'card-value ' + scoreClass(score);
+
+  document.getElementById('stat-score-sub').textContent = stateLabel(score) + ' average';
+  document.getElementById('stat-members').textContent = d.member_count;
+  document.getElementById('stat-overloads').textContent = d.total_overloads_today;
+  document.getElementById('stat-overloads-sub').textContent =
+    `${d.total_overloads_week} this week`;
+
+  const burnout = document.getElementById('stat-burnout');
+  burnout.textContent = d.burnout_risk_members;
+  burnout.className = 'card-value ' + (d.burnout_risk_members > 0 ? 'score-overload' : 'score-flow');
+
+  // Update donut
+  const dist = d.state_distribution_today;
+  const total = dist.flow + dist.friction + dist.fatigue + dist.overload || 1;
+  const flowPct = Math.round(dist.flow / total * 100);
+  document.getElementById('donut-pct').textContent = flowPct + '%';
+
+  donutChart.data.datasets[0].data = [
+    dist.flow, dist.friction, dist.fatigue, dist.overload,
+  ];
+  donutChart.update('none');
+}
+
+function renderTrend(d) {
+  const labels = d.days.map(x => {
+    const dt = new Date(x.date);
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  const scores = d.days.map(x => x.avg_score);
+
+  trendChart.data.labels = labels;
+  trendChart.data.datasets[0].data = scores;
+  trendChart.update('active');
+}
+
+function renderMembers(d) {
+  const tbody = document.getElementById('members-tbody');
+
+  if (!d.members || d.members.length === 0) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="4">No members yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = d.members.map(m => {
+    const name = m.display_name || `<span style="color:var(--muted);font-style:italic">Anonymous</span>`;
+    const roleBadge = m.role === 'manager'
+      ? `<span style="color:var(--accent);font-size:12px">Manager</span>`
+      : `<span style="color:var(--muted);font-size:12px">Developer</span>`;
+
+    const score = m.avg_score_today != null ? m.avg_score_today.toFixed(1) : '—';
+    const state = m.current_state || 'unknown';
+    const badge = `<span class="state-badge badge-${state}">${stateIcon(state)} ${capitalize(state)}</span>`;
+
+    return `<tr>
+      <td>${name}</td>
+      <td>${roleBadge}</td>
+      <td><span class="${scoreClass(m.avg_score_today)}">${score}</span></td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CHART INIT
+// ═══════════════════════════════════════════════════════════════════════
+function initCharts() {
+  // Donut
+  const donutCtx = document.getElementById('donut-chart').getContext('2d');
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Flow', 'Friction', 'Fatigue', 'Overload'],
+      datasets: [{
+        data: [1, 0, 0, 0],
+        backgroundColor: ['#22c55e', '#eab308', '#f97316', '#ef4444'],
+        borderWidth: 0,
+        hoverOffset: 4,
+      }],
+    },
+    options: {
+      cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.raw.toFixed(0)}s`,
+        },
+      }},
+    },
+  });
+
+  // Line trend
+  const trendCtx = document.getElementById('trend-chart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Avg Team Score',
+        data: [],
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.12)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.35,
+        pointBackgroundColor: '#6366f1',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          grid: { color: '#2a2d3e' },
+          ticks: { color: '#64748b', font: { size: 11 } },
+        },
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: '#2a2d3e' },
+          ticks: { color: '#64748b', font: { size: 11 } },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d27',
+          borderColor: '#2a2d3e',
+          borderWidth: 1,
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          callbacks: {
+            label: ctx => ` Score: ${ctx.raw.toFixed(1)}/100`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function scoreClass(score) {
+  if (score == null) return '';
+  if (score <= 30)  return 'score-flow';
+  if (score <= 60)  return 'score-friction';
+  if (score <= 80)  return 'score-fatigue';
+  return 'score-overload';
+}
+
+function stateLabel(score) {
+  if (score <= 30)  return 'Flow';
+  if (score <= 60)  return 'Friction';
+  if (score <= 80)  return 'Fatigue';
+  return 'Overload';
+}
+
+function stateIcon(state) {
+  return { flow: '🟢', friction: '🟡', fatigue: '🟠', overload: '🔴', unknown: '⚫' }[state] || '⚫';
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+</script>
+</body>
+</html>

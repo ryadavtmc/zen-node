@@ -1,0 +1,39 @@
+# Exclude server-side code (not needed in the extension)
+backend/
+cloud/
+src/
+
+# Build output and node modules
+out/**/*.map
+dist/
+node_modules/
+coverage/
+.vscode/
+.vscode-test/
+*.tsbuildinfo
+
+# Python/virtualenv
+*.pyc
+__pycache__/
+.venv/
+env/
+venv/
+.env
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.log
+
+# Git and version control
+.git/
+.gitignore
+
+# Test and temp files
+test/
+tests/
+*.spec.*
+*.test.*
+*.swp
+*.tmp
+*.bak
