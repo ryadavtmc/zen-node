@@ -21,6 +21,8 @@ import { CognitiveReport } from './types';
 import { SessionStore } from './sessionStore';
 
 let currentPanel: vscode.WebviewPanel | undefined;
+let _refreshInterval: NodeJS.Timeout | undefined;
+let _currentStore: SessionStore | undefined;
 
 /**
  * Show the dashboard webview panel.
@@ -32,6 +34,7 @@ export function showDashboard(
     latestReport: CognitiveReport | null,
 ): void {
     if (currentPanel) {
+        _currentStore = store;
         currentPanel.reveal(vscode.ViewColumn.Two);
         if (latestReport) {
             currentPanel.webview.postMessage({ command: 'updateReport', report: latestReport });
@@ -48,6 +51,7 @@ export function showDashboard(
     );
 
     currentPanel.webview.html = getDashboardHtml();
+    _currentStore = store;
 
     // Send the latest report + session data immediately
     setTimeout(() => {
@@ -55,7 +59,10 @@ export function showDashboard(
             currentPanel?.webview.postMessage({ command: 'updateReport', report: latestReport });
         }
         _pushStoreData(store);
-    }, 500);
+    }, 300);
+
+    // Periodic refresh — ensures data appears even if the initial requestData is missed
+    _refreshInterval = setInterval(() => { _pushStoreData(store); }, 5000);
 
     // Handle messages from webview
     currentPanel.webview.onDidReceiveMessage(
@@ -72,7 +79,11 @@ export function showDashboard(
         context.subscriptions,
     );
 
-    currentPanel.onDidDispose(() => { currentPanel = undefined; });
+    currentPanel.onDidDispose(() => {
+        currentPanel = undefined;
+        if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = undefined; }
+        _currentStore = undefined;
+    });
 }
 
 function _pushStoreData(store: SessionStore): void {
@@ -87,16 +98,21 @@ function _pushStoreData(store: SessionStore): void {
 
 /**
  * Push a new CognitiveReport to the dashboard if it's open.
+ * Also pushes fresh session data so timeline/summary update immediately.
  * Called from the main loop in extension.ts after each cycle.
  */
 export function updateDashboard(report: CognitiveReport): void {
-    currentPanel?.webview.postMessage({ command: 'updateReport', report });
+    if (!currentPanel) { return; }
+    currentPanel.webview.postMessage({ command: 'updateReport', report });
+    if (_currentStore) { _pushStoreData(_currentStore); }
 }
 
 /**
  * Dispose the dashboard panel (e.g., on deactivation).
  */
 export function disposeDashboard(): void {
+    if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = undefined; }
+    _currentStore = undefined;
     currentPanel?.dispose();
     currentPanel = undefined;
 }
@@ -749,9 +765,8 @@ function getDashboardHtml(): string {
             banner.classList.remove('visible');
         }
 
-        // ── Fetch backend data for timeline + summary ──
-        fetchTimeline();
-        fetchSummary();
+        // ── Request fresh session data from extension ──
+        vscode.postMessage({ command: 'requestData' });
     }
 
     function setMetricBar(barEl, valEl, value, color) {
@@ -769,13 +784,6 @@ function getDashboardHtml(): string {
     }
 
     // ── Timeline chart ──────────────────────────────────────────────
-    function fetchTimeline() {
-        fetch(BACKEND + '/api/v1/session/timeline')
-            .then(function(res) { return res.json(); })
-            .then(function(data) { renderTimeline(data.entries || []); })
-            .catch(function() {});
-    }
-
     function renderTimeline(entries) {
         var chartSvg   = document.getElementById('chartSvg');
         var chartEmpty = document.getElementById('chartEmpty');
@@ -840,29 +848,30 @@ function getDashboardHtml(): string {
     }
 
     // ── Summary stats ───────────────────────────────────────────────
-    function fetchSummary() {
-        fetch(BACKEND + '/api/v1/session/summary')
-            .then(function(res) { return res.json(); })
-            .then(function(data) { renderSummary(data); })
-            .catch(function() {});
-    }
-
     function renderSummary(s) {
         document.getElementById('statAvg').textContent       = Math.round(s.avgScore);
         document.getElementById('statMin').textContent       = Math.round(s.minScore);
         document.getElementById('statMax').textContent       = Math.round(s.maxScore);
         document.getElementById('statSnapshots').textContent = s.snapshotCount;
         document.getElementById('statOverloads').textContent = s.overloadCount;
-        document.getElementById('statDuration').textContent  = formatDuration(s.durationSeconds);
 
-        // State time distribution bars
-        var sd = s.stateDurations;
-        var total = sd.flowSeconds + sd.frictionSeconds + sd.fatigueSeconds + sd.overloadSeconds;
+        // Duration: prefer durationSeconds if present, else compute from startedAt
+        var dur = typeof s.durationSeconds === 'number'
+            ? s.durationSeconds
+            : Math.round((Date.now() - new Date(s.startedAt).getTime()) / 1000);
+        document.getElementById('statDuration').textContent = formatDuration(dur);
+
+        // State time distribution bars — support both flat and nested shapes
+        var flow     = typeof s.flowSeconds     === 'number' ? s.flowSeconds     : (s.stateDurations ? s.stateDurations.flowSeconds     : 0);
+        var friction = typeof s.frictionSeconds === 'number' ? s.frictionSeconds : (s.stateDurations ? s.stateDurations.frictionSeconds : 0);
+        var fatigue  = typeof s.fatigueSeconds  === 'number' ? s.fatigueSeconds  : (s.stateDurations ? s.stateDurations.fatigueSeconds  : 0);
+        var overload = typeof s.overloadSeconds === 'number' ? s.overloadSeconds : (s.stateDurations ? s.stateDurations.overloadSeconds : 0);
+        var total = flow + friction + fatigue + overload;
         if (total > 0) {
-            setTimeBar('timeBarFlow',     'timeValFlow',     sd.flowSeconds,     total);
-            setTimeBar('timeBarFriction', 'timeValFriction', sd.frictionSeconds, total);
-            setTimeBar('timeBarFatigue',  'timeValFatigue',  sd.fatigueSeconds,  total);
-            setTimeBar('timeBarOverload', 'timeValOverload', sd.overloadSeconds, total);
+            setTimeBar('timeBarFlow',     'timeValFlow',     flow,     total);
+            setTimeBar('timeBarFriction', 'timeValFriction', friction, total);
+            setTimeBar('timeBarFatigue',  'timeValFatigue',  fatigue,  total);
+            setTimeBar('timeBarOverload', 'timeValOverload', overload, total);
         }
     }
 
@@ -892,8 +901,14 @@ function getDashboardHtml(): string {
         var msg = event.data;
         if (msg.command === 'updateReport') {
             updateReport(msg.report);
+        } else if (msg.command === 'sessionData') {
+            if (msg.timeline) { renderTimeline(msg.timeline); }
+            if (msg.summary)  { renderSummary(msg.summary); }
         }
     });
+
+    // Request initial data from extension on load
+    vscode.postMessage({ command: 'requestData' });
 </script>
 </body>
 </html>`;

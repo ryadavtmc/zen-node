@@ -93,13 +93,7 @@ export class TraceCollector implements vscode.Disposable {
             })
         );
 
-        // ── 3. Track undo via command execution ──
-        // VS Code fires this for any command, we filter for undo/redo
-        this._disposables.push(
-            this._interceptUndoCommands()
-        );
-
-        // ── 4. Idle time accumulation via polling ──
+        // ── 3. Idle time accumulation via polling ──
         this._idleCheckInterval = setInterval(() => {
             this._checkIdle();
         }, TraceCollector.IDLE_CHECK_INTERVAL_MS);
@@ -195,6 +189,13 @@ export class TraceCollector implements vscode.Disposable {
 
         this._recordActivity();
 
+        // Detect undo via the document change reason (VS Code 1.65+)
+        if (e.reason === vscode.TextDocumentChangeReason.Undo) {
+            this._undos += 1;
+            this._keystrokes += 1;
+            return; // don't double-count as backspace/insertion
+        }
+
         for (const change of e.contentChanges) {
             const insertedLen = change.text.length;
             const deletedLen = change.rangeLength;
@@ -234,32 +235,6 @@ export class TraceCollector implements vscode.Disposable {
     private _onTabSwitch(): void {
         this._recordActivity();
         this._tabSwitches += 1;
-    }
-
-    /**
-     * Intercept undo/redo commands by overriding them temporarily.
-     * We re-execute the real command after counting.
-     */
-    private _interceptUndoCommands(): vscode.Disposable {
-        const disposables: vscode.Disposable[] = [];
-
-        // Override 'undo' command to count it
-        disposables.push(
-            vscode.commands.registerCommand('zennode.interceptUndo', async () => {
-                this._undos += 1;
-                this._keystrokes += 1;
-                this._recordActivity();
-                // Execute the real undo
-                await vscode.commands.executeCommand('default:undo');
-            })
-        );
-
-        // Register a keybinding override via type command interception
-        // Since we can't easily override keybindings, we use a different approach:
-        // We track document version changes that look like undos
-        // (This is handled by checking for content decrease in onDidChangeTextDocument)
-
-        return vscode.Disposable.from(...disposables);
     }
 
     // ====================================================================

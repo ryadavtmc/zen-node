@@ -81,17 +81,27 @@ export class SessionStore {
     }
 
     getSummary() {
-        const { timeline, stateDurations, overloadCount, themeShifts, startedAt } = this._data.currentSession;
+        const session = this._data.currentSession;
+        const { timeline, stateDurations, overloadCount, themeShifts, startedAt } = session;
+
+        // Include elapsed time in the current in-progress state (not yet flushed to stateDurations)
+        const elapsedNow = session.lastEntryTime
+            ? (Date.now() - new Date(session.lastEntryTime).getTime()) / 1000
+            : 0;
+        const durations = { ...stateDurations };
+        durations[session.lastState] += elapsedNow;
 
         if (timeline.length === 0) {
             return {
-                sessionId: this._data.currentSession.sessionId,
+                sessionId: session.sessionId,
                 startedAt,
                 snapshotCount: 0,
                 avgScore: 0, maxScore: 0, minScore: 0,
                 overloadCount: 0, themeShifts: 0,
-                flowSeconds: 0, frictionSeconds: 0,
-                fatigueSeconds: 0, overloadSeconds: 0,
+                flowSeconds: Math.round(durations.flow),
+                frictionSeconds: Math.round(durations.friction),
+                fatigueSeconds: Math.round(durations.fatigue),
+                overloadSeconds: Math.round(durations.overload),
             };
         }
 
@@ -99,18 +109,18 @@ export class SessionStore {
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
 
         return {
-            sessionId:      this._data.currentSession.sessionId,
+            sessionId:       session.sessionId,
             startedAt,
-            snapshotCount:  timeline.length,
-            avgScore:       Math.round(avg * 10) / 10,
-            maxScore:       Math.max(...scores),
-            minScore:       Math.min(...scores),
+            snapshotCount:   timeline.length,
+            avgScore:        Math.round(avg * 10) / 10,
+            maxScore:        Math.max(...scores),
+            minScore:        Math.min(...scores),
             overloadCount,
             themeShifts,
-            flowSeconds:     Math.round(stateDurations.flow),
-            frictionSeconds: Math.round(stateDurations.friction),
-            fatigueSeconds:  Math.round(stateDurations.fatigue),
-            overloadSeconds: Math.round(stateDurations.overload),
+            flowSeconds:     Math.round(durations.flow),
+            frictionSeconds: Math.round(durations.friction),
+            fatigueSeconds:  Math.round(durations.fatigue),
+            overloadSeconds: Math.round(durations.overload),
         };
     }
 
@@ -141,7 +151,7 @@ export class SessionStore {
             themeShift: report.themeShift,
         });
 
-        if (report.state === 'overload') {
+        if (report.state === 'overload' && session.lastState !== 'overload') {
             session.overloadCount += 1;
         }
         if (report.themeShift) {

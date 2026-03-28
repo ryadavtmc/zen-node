@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.mypy_cache/
+
+# Build output
+out/
+dist/
+*.js.map
+
+# Environment & secrets
+.env
+backend/.env
+
+# IDE
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Package locks (keep one, ignore the other)
+package-lock.json
+
+# Python virtual env
+venv/
+.venv/
+env/
+
+# Session data (local to each developer)
+.zen_sessions/
+backend/.zen_sessions/
+backend/zennode.db
+backend/zennode.db-wal
+backend/zennode.db-shm
+
+# VSIX package
+*.vsix
