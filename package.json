@@ -1,0 +1,114 @@
+{
+    "name": "zennode",
+    "displayName": "ZenNode — Cognitive Load Monitor",
+    "description": "The first IDE layer that listens to your brain, not just your keyboard. Monitors cognitive load in real-time to protect developer mental health.",
+    "version": "0.1.0",
+    "publisher": "zennode",
+    "license": "MIT",
+    "icon": "assets/icon.png",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "cognitive-load",
+        "developer-wellbeing",
+        "burnout",
+        "flow-state",
+        "mental-health",
+        "productivity"
+    ],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "zennode.showDashboard",
+                "title": "ZenNode: Show Cognitive Dashboard"
+            },
+            {
+                "command": "zennode.resetSession",
+                "title": "ZenNode: Reset Session"
+            },
+            {
+                "command": "zennode.toggleTracking",
+                "title": "ZenNode: Toggle Tracking"
+            },
+            {
+                "command": "zennode.showBreathingExercise",
+                "title": "ZenNode: Breathing Exercise"
+            },
+            {
+                "command": "zennode.connectToTeam",
+                "title": "ZenNode: Connect to Team"
+            },
+            {
+                "command": "zennode.disconnect",
+                "title": "ZenNode: Disconnect from Team"
+            }
+        ],
+        "configuration": {
+            "title": "ZenNode",
+            "properties": {
+                "zennode.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable or disable ZenNode cognitive load monitoring."
+                },
+                "zennode.sampleIntervalMs": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "How often (ms) to send behavioral snapshots to the backend."
+                },
+                "zennode.enableThemeShift": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically shift syntax colors to warm tones under high cognitive load."
+                },
+                "zennode.enableLLM": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable LLM-powered cognitive state interpretation (requires backend LLM config)."
+                },
+                "zennode.warningThreshold": {
+                    "type": "number",
+                    "default": 50,
+                    "description": "Cognitive load score (0-100) that triggers a yellow warning."
+                },
+                "zennode.criticalThreshold": {
+                    "type": "number",
+                    "default": 80,
+                    "description": "Cognitive load score (0-100) that triggers red alert and theme shift."
+                },
+                "zennode.showNotifications": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show supportive notification messages during high cognitive load."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "lint": "eslint src --ext ts",
+        "pretest": "npm run compile"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "@types/vscode": "^1.85.0",
+        "@typescript-eslint/eslint-plugin": "^7.0.0",
+        "@typescript-eslint/parser": "^7.0.0",
+        "eslint": "^8.56.0",
+        "typescript": "^5.3.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourusername/zen-node"
+    }
+}
