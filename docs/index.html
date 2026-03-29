@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenNode — Cognitive Load Monitoring for Developers</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0c12;
+      --surface:   #13161f;
+      --surface2:  #1a1d2b;
+      --border:    #252838;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --accent:    #6366f1;
+      --accent2:   #818cf8;
+      --flow:      #22c55e;
+      --friction:  #eab308;
+      --fatigue:   #f97316;
+      --overload:  #ef4444;
+      --radius:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10, 12, 18, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 7px 18px;
+      border-radius: 8px;
+      font-weight: 600 !important;
+    }
+
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── SECTIONS ── */
+    section { padding: 100px 32px; max-width: 1100px; margin: 0 auto; }
+
+    /* ── HERO ── */
+    #hero {
+      padding-top: 160px;
+      padding-bottom: 120px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 999px;
+      padding: 5px 16px;
+      font-size: 13px;
+      color: var(--accent2);
+      font-weight: 500;
+      margin-bottom: 28px;
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 6vw, 68px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+
+    .hero-title .highlight {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+    /* ── ZEN BAR DEMO ── */
+    .zenbar-demo {
+      margin-top: 64px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .zenbar-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s, border-color 0.2s;
+      cursor: default;
+    }
+
+    .zenbar-pill:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .pill-flow     { color: var(--flow); }
+    .pill-friction { color: var(--friction); }
+    .pill-fatigue  { color: var(--fatigue); }
+    .pill-overload { color: var(--overload); }
+
+    /* ── SECTION HEADERS ── */
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 580px;
+      margin-bottom: 56px;
+    }
+
+    /* ── STATES ── */
+    .states-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .state-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .state-card:hover { transform: translateY(-3px); }
+    .state-card.flow     { border-top: 3px solid var(--flow); }
+    .state-card.friction { border-top: 3px solid var(--friction); }
+    .state-card.fatigue  { border-top: 3px solid var(--fatigue); }
+    .state-card.overload { border-top: 3px solid var(--overload); }
+
+    .state-icon { font-size: 28px; margin-bottom: 12px; }
+
+    .state-name {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .state-score {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .state-desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .feature-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    .feature-tag {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(99,102,241,0.12);
+      color: var(--accent2);
+    }
+
+    /* ── HOW IT WORKS ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+
+    .step {
+      display: flex;
+      gap: 24px;
+      padding: 0 0 40px 0;
+    }
+
+    .step-num {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-content { padding-top: 8px; }
+
+    .step-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .step-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* ── SCORING ── */
+    .score-formula {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 16px;
+      text-align: center;
+      color: var(--accent2);
+      letter-spacing: 0.3px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .metric-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .metric-weight {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .metric-desc { font-size: 12px; color: var(--muted); }
+
+    /* ── ARCHITECTURE ── */
+    .arch-diagram {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 700px) { .arch-diagram { grid-template-columns: 1fr; } }
+
+    .arch-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .arch-box.optional { border-style: dashed; }
+
+    .arch-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .arch-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .arch-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .arch-item-name { font-weight: 600; }
+    .arch-item-desc { color: var(--muted); font-size: 13px; }
+
+    .arch-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: var(--muted);
+      padding: 12px;
+    }
+
+    /* ── PRIVACY ── */
+    .privacy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .privacy-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .privacy-icon { font-size: 24px; flex-shrink: 0; }
+
+    .privacy-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .privacy-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* ── SETUP ── */
+    .setup-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .setup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .setup-step-num {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+
+    .setup-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .setup-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    pre {
+      background: #0d0f18;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      color: #a5f3fc;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    pre .comment { color: var(--muted); }
+    pre .cmd     { color: #86efac; }
+
+    /* ── TEAM ── */
+    .team-grid {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .team-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      text-align: center;
+      min-width: 180px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .team-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+    .team-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .team-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .team-role { font-size: 13px; color: var(--muted); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    /* ── FADE IN ANIMATION ── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Zen<span>Node</span></div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#scoring">Scoring</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#setup">Setup</a></li>
+    <li><a href="https://github.com/ryadavtmc/zen-node" class="nav-cta">View on GitHub →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge">🧠 Mental Health Hackathon 2026</div>
+  <h1 class="hero-title">
+    Your IDE monitors your code.<br>
+    <span class="highlight">ZenNode monitors you.</span>
+  </h1>
+  <p class="hero-sub">
+    Real-time cognitive load monitoring inside VS Code. Detects when your brain is overloaded — before burnout sets in — using behavioral biomarkers, not surveys.
+  </p>
+  <div class="hero-actions">
+    <a href="#setup" class="btn-primary">Get Started</a>
+    <a href="https://github.com/ryadavtmc/zen-node" class="btn-secondary">View on GitHub</a>
+  </div>
+
+  <div class="zenbar-demo">
+    <div class="zenbar-pill pill-flow">🟢 Flow &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 12</div>
+    <div class="zenbar-pill pill-friction">🟡 Friction &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 45</div>
+    <div class="zenbar-pill pill-fatigue">🟠 Fatigue &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 68</div>
+    <div class="zenbar-pill pill-overload">🔴 Overload &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 87</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- COGNITIVE STATES -->
+<section id="states" class="fade-in">
+  <div class="section-label">Cognitive States</div>
+  <h2 class="section-title">Four states. One goal — catch overload early.</h2>
+  <p class="section-sub">ZenNode scores your brain every 5 seconds and classifies it into one of four states.</p>
+
+  <div class="states-grid">
+    <div class="state-card flow">
+      <div class="state-icon">🟢</div>
+      <div class="state-name" style="color:var(--flow)">Flow</div>
+      <div class="state-score">Score 0 – 30</div>
+      <div class="state-desc">Deep focus, everything clicking. ZenNode stays completely invisible — no interruptions, no nudges.</div>
+    </div>
+    <div class="state-card friction">
+      <div class="state-icon">🟡</div>
+      <div class="state-name" style="color:var(--friction)">Friction</div>
+      <div class="state-score">Score 31 – 60</div>
+      <div class="state-desc">Frequent edits, rising undo rate. Working hard but managing. A gentle heads-up may appear.</div>
+    </div>
+    <div class="state-card fatigue">
+      <div class="state-icon">🟠</div>
+      <div class="state-name" style="color:var(--fatigue)">Fatigue</div>
+      <div class="state-score">Score 61 – 80</div>
+      <div class="state-desc">Long idle gaps, slowed typing. Brain is tiring. Actionable nudges begin — focus tips, tab cleanup.</div>
+    </div>
+    <div class="state-card overload">
+      <div class="state-icon">🔴</div>
+      <div class="state-name" style="color:var(--overload)">Overload</div>
+      <div class="state-score">Score 81 – 100</div>
+      <div class="state-desc">Rapid tab-cycling, pasting AI blocks without review. Full intervention: amber theme + LLM message + breathing prompt.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<section id="features" class="fade-in">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything your brain needs. Nothing it doesn't.</h2>
+  <p class="section-sub">All features are privacy-first. Scoring runs locally. Cloud is optional.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🔍</span>
+      <div class="feature-title">Behavioral Trace Collector</div>
+      <div class="feature-desc">Silently tracks 6 behavioral signals every 5 seconds — keystrokes, backspaces, tab switches, undo actions, idle time, and paste events. Never records what you type, only counts.</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧮</span>
+      <div class="feature-title">Local Cognitive Scorer</div>
+      <div class="feature-desc">Pure TypeScript weighted formula with EMA smoothing (α=0.6) produces a 0–100 score entirely inside the extension. No network call, zero latency. Needs sustained signals — no jittery false alarms.</div>
+      <span class="feature-tag">Layer A · No Server</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🎨</span>
+      <div class="feature-title">Zen Bar</div>
+      <div class="feature-desc">Always-visible status bar showing your current state with emoji and score. Rich tooltip reveals per-metric breakdown with visual bar charts. Click to open the live dashboard.</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌅</span>
+      <div class="feature-title">Warm Amber Theme Shift</div>
+      <div class="feature-desc">At overload, your editor's colors shift to warm amber — 30+ VS Code tokens overridden. Clinically inspired: warm light reduces cortisol. Hysteresis prevents flickering (ON at 80, OFF below 60).</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🫁</span>
+      <div class="feature-title">Guided Breathing Exercise</div>
+      <div class="feature-desc">Animated 4-7-8 breathing webview (Inhale 4s → Hold 7s → Exhale 8s × 3 cycles). Pulsing orb, SVG progress ring, ambient particles. Clinically proven to reduce acute anxiety within 60 seconds.</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📈</span>
+      <div class="feature-title">Live Dashboard</div>
+      <div class="feature-desc">Score gauge, per-metric bars, session timeline chart, state time distribution, and AI insight banner — all updating live every 5 seconds. Opens side-by-side with your editor.</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔔</span>
+      <div class="feature-title">3-Tier Notification System</div>
+      <div class="feature-desc">Fatigue nudges at orange zone (5-min cooldown), overload interventions at red zone (3-min cooldown), and recovery celebrations when you return to flow. Non-judgmental and actionable.</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">LLM-Powered Interventions</div>
+      <div class="feature-desc">At overload, an AI (Groq/OpenAI) generates a CBT-based message — like a caring colleague, not a therapist. Under 30 words, actionable, never preachy. The LLM sees only behavioral numbers, never your code.</div>
+      <span class="feature-tag">Layer B · Cloud Optional</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">👥</span>
+      <div class="feature-title">Team Health Sync</div>
+      <div class="feature-desc">Share anonymized session summaries with your team's manager dashboard. See collective cognitive load trends. Opt-in only — identified by a random anonymous ID, never your name or email.</div>
+      <span class="feature-tag">Layer B · Cloud Optional</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💾</span>
+      <div class="feature-title">Session Persistence</div>
+      <div class="feature-desc">Auto-saves sessions to VS Code's global storage. Survives editor restarts — EMA score is restored so monitoring resumes seamlessly. Completed sessions are archived with full timeline breakdown.</div>
+      <span class="feature-tag">Always On · Local</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="fade-in">
+  <div class="section-label">How It Works</div>
+  <h2 class="section-title">From keystroke to intervention in 5 seconds.</h2>
+  <p class="section-sub">ZenNode runs a tight loop — collect, score, act — every 5 seconds, entirely in the background.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Collect behavioral signals</div>
+        <div class="step-desc">The TraceCollector counts keystrokes, backspaces, tab switches, undo actions, idle time, and paste events every 5 seconds. It records counts only — never the content of what you type.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Score locally with EMA</div>
+        <div class="step-desc">The scorer normalizes each signal into a 0–100 metric, applies weights, and computes a cognitive load score. An Exponential Moving Average (α=0.6) smooths the score to prevent jitter. All math runs in TypeScript — no server needed.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Classify the state</div>
+        <div class="step-desc">The score is mapped to one of four states: Flow (0–30), Friction (31–60), Fatigue (61–80), or Overload (81–100). The Zen Bar updates instantly in the status bar.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Intervene at the right moment</div>
+        <div class="step-desc">Depending on the state, ZenNode triggers the appropriate response: theme shift at overload, notification nudge at fatigue, LLM-generated message via the optional cloud at overload.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Sync to team (optional)</div>
+        <div class="step-desc">Every ~50 seconds, an anonymized session summary is pushed to the cloud. Managers see aggregated team health — never individual raw data. You control the connection; it's opt-in only.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- SCORING -->
+<section id="scoring" class="fade-in">
+  <div class="section-label">Scoring Algorithm</div>
+  <h2 class="section-title">Transparent math. No black box.</h2>
+  <p class="section-sub">The cognitive load score is a weighted sum of 5 normalized behavioral metrics, smoothed with EMA.</p>
+
+  <div class="score-formula">
+    S = 0.25·SwitchRate + 0.20·ErrorRate + 0.25·UndoRate + 0.15·IdleRatio + 0.15·PasteRatio
+  </div>
+
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-name">SwitchRate</div>
+      <div class="metric-weight">25%</div>
+      <div class="metric-desc">Tab switches per minute. Strongest signal of context-switching overload.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">ErrorRate</div>
+      <div class="metric-weight">20%</div>
+      <div class="metric-desc">Backspaces ÷ total keystrokes. Indicates struggle and friction.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">UndoRate</div>
+      <div class="metric-weight">25%</div>
+      <div class="metric-desc">Undos per minute. Directly correlates with decision fatigue.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">IdleRatio</div>
+      <div class="metric-weight">15%</div>
+      <div class="metric-desc">Idle seconds ÷ total seconds. Signals disengagement or exhaustion.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">PasteRatio</div>
+      <div class="metric-weight">15%</div>
+      <div class="metric-desc">Pasted chars ÷ total chars. Flags AI dump without review behavior.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ARCHITECTURE -->
+<section id="architecture" class="fade-in">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">Two layers. Use only what you need.</h2>
+  <p class="section-sub">Layer A is always on, always local, zero setup. Layer B is opt-in and adds cloud features.</p>
+
+  <div class="arch-diagram">
+    <div class="arch-box">
+      <div class="arch-title">Layer A — VS Code Extension (always local)</div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">traceCollector.ts</div><div class="arch-item-desc">Captures behavioral signals every 5s</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">scorer.ts</div><div class="arch-item-desc">Weighted EMA scoring, 0–100</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">zenBar.ts</div><div class="arch-item-desc">Live state indicator in status bar</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">themeShifter.ts</div><div class="arch-item-desc">Warm amber overlay at overload</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">dashboard.ts</div><div class="arch-item-desc">Live metrics webview</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">breathingExercise.ts</div><div class="arch-item-desc">4-7-8 guided breathing webview</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">sessionStore.ts</div><div class="arch-item-desc">JSON persistence in VS Code global storage</div></div></div>
+    </div>
+    <div class="arch-box optional">
+      <div class="arch-title">Layer B — Cloud API · FastAPI :8421 (optional)</div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">auth.py</div><div class="arch-item-desc">Signup, login, JWT token management</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">llm_interpreter.py</div><div class="arch-item-desc">CBT-grounded interventions via Groq/OpenAI</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">routes/sync.py</div><div class="arch-item-desc">Receive anonymized session summaries</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">routes/dashboard.py</div><div class="arch-item-desc">Team overview & trend for managers</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">database.py</div><div class="arch-item-desc">SQLite via SQLAlchemy</div></div></div>
+      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">static/dashboard.html</div><div class="arch-item-desc">Manager SPA served at :8421/</div></div></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PRIVACY -->
+<section id="privacy" class="fade-in">
+  <div class="section-label">Privacy</div>
+  <h2 class="section-title">Privacy is the foundation, not a feature.</h2>
+  <p class="section-sub">Mental health tooling only works if developers trust it. Every privacy claim below is enforced in code — not just policy.</p>
+
+  <div class="privacy-grid">
+    <div class="privacy-card">
+      <div class="privacy-icon">🖥️</div>
+      <div>
+        <div class="privacy-title">Scoring runs 100% locally</div>
+        <div class="privacy-desc">The TypeScript scorer runs inside the extension process. No data leaves your machine for cognitive scoring. No server required.</div>
+      </div>
+    </div>
+    <div class="privacy-card">
+      <div class="privacy-icon">🔢</div>
+      <div>
+        <div class="privacy-title">Counts only, never content</div>
+        <div class="privacy-desc">ZenNode records how many keystrokes, never what you typed. File names, variable names, and source code are never accessed.</div>
+      </div>
+    </div>
+    <div class="privacy-card">
+      <div class="privacy-icon">🤖</div>
+      <div>
+        <div class="privacy-title">LLM sees metadata, not code</div>
+        <div class="privacy-desc">The AI receives only anonymized behavioral numbers — e.g., "tabSwitches: 18, undos: 12". Your source code is never sent anywhere.</div>
+      </div>
+    </div>
+    <div class="privacy-card">
+      <div class="privacy-icon">👤</div>
+      <div>
+        <div class="privacy-title">Team sync is opt-in and anonymized</div>
+        <div class="privacy-desc">Cloud sync only activates when you choose to connect. Sessions are identified by a random anonymous_id — never your name or email.</div>
+      </div>
+    </div>
+    <div class="privacy-card">
+      <div class="privacy-icon">📵</div>
+      <div>
+        <div class="privacy-title">No telemetry, ever</div>
+        <div class="privacy-desc">ZenNode has no analytics, no crash reporting, no phone-home. It cannot phone home because it has no such code.</div>
+      </div>
+    </div>
+    <div class="privacy-card">
+      <div class="privacy-icon">🔍</div>
+      <div>
+        <div class="privacy-title">Fully auditable</div>
+        <div class="privacy-desc">The entire codebase is open source. Every privacy claim above can be verified line-by-line on GitHub.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- SETUP -->
+<section id="setup" class="fade-in">
+  <div class="section-label">Setup</div>
+  <h2 class="section-title">Up and running in 2 minutes.</h2>
+  <p class="section-sub">Requirements: VS Code ≥ 1.85 · Node.js ≥ 18 · Python ≥ 3.10 (cloud only)</p>
+
+  <div class="setup-steps">
+    <div class="setup-card">
+      <div class="setup-step-num">1</div>
+      <div class="setup-title">Clone & install</div>
+      <div class="setup-desc">Clone the repo and install Node.js dependencies.</div>
+    </div>
+    <div class="setup-card">
+      <div class="setup-step-num">2</div>
+      <div class="setup-title">Build the extension</div>
+      <div class="setup-desc">Compile TypeScript and package as a .vsix file.</div>
+    </div>
+    <div class="setup-card">
+      <div class="setup-step-num">3</div>
+      <div class="setup-title">Install in VS Code</div>
+      <div class="setup-desc">Install the .vsix and reload VS Code. The Zen Bar appears.</div>
+    </div>
+    <div class="setup-card">
+      <div class="setup-step-num">4</div>
+      <div class="setup-title">Start the cloud (optional)</div>
+      <div class="setup-desc">Run the FastAPI backend for LLM interventions and team sync.</div>
+    </div>
+  </div>
+
+  <pre><span class="comment"># 1. Clone and install</span>
+<span class="cmd">git clone https://github.com/ryadavtmc/zen-node.git
+cd zen-node
+npm install</span>
+
+<span class="comment"># 2. Build and install the extension</span>
+<span class="cmd">npm run compile
+vsce package
+code --install-extension zennode-0.1.0.vsix</span>
+
+<span class="comment"># 3. Start the cloud backend (optional)</span>
+<span class="cmd">cd cloud
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 8421 --reload</span></pre>
+</section>
+
+<hr class="divider">
+
+<!-- TEAM -->
+<section id="team" class="fade-in">
+  <div class="section-label">Team</div>
+  <h2 class="section-title">Built with care.</h2>
+  <p class="section-sub">Built for the Nepal US Mental Health Hackathon 2026.</p>
+
+  <div class="team-grid">
+    <div class="team-card">
+      <div class="team-avatar">RY</div>
+      <div class="team-name">Ravi Yadav</div>
+      <div class="team-role">Developer</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">HJ</div>
+      <div class="team-name">Himanshu Jha</div>
+      <div class="team-role">Developer</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>MIT License · <a href="https://github.com/ryadavtmc/zen-node">GitHub</a> · <a href="https://github.com/ryadavtmc/zen-node">GitHub Repo</a></p>
+  <p style="margin-top:8px;font-size:12px">In 2026, your IDE catches bugs in your code. ZenNode catches the cracks in your mental health — before they become breakdowns.</p>
+</footer>
+
+<script>
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
