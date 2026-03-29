@@ -80,7 +80,13 @@ def health():
     return {"status": "ok", "service": "zennode-cloud-api", "version": "0.1.0"}
 
 
-@app.get("/ui", include_in_schema=False)
+@app.get("/", include_in_schema=False)
+def landing_page():
+    """Serve the ZenNode landing/features SPA."""
+    return FileResponse(_STATIC_DIR / "index.html")
+
+
+@app.get("/dashboard", include_in_schema=False)
 def manager_ui():
     """Serve the manager dashboard web UI."""
     return FileResponse(_STATIC_DIR / "dashboard.html")

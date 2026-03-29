@@ -3,61 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZenNode — Cognitive Load Monitoring for Developers</title>
+  <title>ZenNode — Cognitive Load Monitor for VS Code</title>
+  <meta name="description" content="The first IDE layer that listens to your brain, not just your keyboard. Real-time cognitive load monitoring for VS Code." />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0a0c12;
-      --surface:   #13161f;
-      --surface2:  #1a1d2b;
-      --border:    #252838;
-      --text:      #e2e8f0;
-      --muted:     #64748b;
-      --accent:    #6366f1;
-      --accent2:   #818cf8;
-      --flow:      #22c55e;
-      --friction:  #eab308;
-      --fatigue:   #f97316;
-      --overload:  #ef4444;
-      --radius:    14px;
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #21262d;
+      --text:     #e6edf3;
+      --muted:    #848d97;
+      --purple:   #818cf8;
+      --green:    #3fb950;
+      --amber:    #d29922;
+      --orange:   #f0883e;
+      --red:      #f85149;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.5;
+      overflow-x: hidden;
     }
 
     /* ── NAV ── */
     nav {
       position: fixed;
-      top: 0; left: 0; right: 0;
+      inset: 0 0 auto;
       z-index: 100;
-      background: rgba(10, 12, 18, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 0 40px;
+      height: 60px;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
     }
 
-    .nav-logo {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
+    .logo {
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--text);
+      letter-spacing: -0.3px;
     }
 
-    .nav-logo span { color: var(--accent); }
+    .logo em { color: var(--purple); font-style: normal; }
 
     .nav-links {
       display: flex;
-      gap: 28px;
+      gap: 2px;
       list-style: none;
     }
 
@@ -65,525 +66,499 @@
       color: var(--muted);
       text-decoration: none;
       font-size: 14px;
-      font-weight: 500;
-      transition: color 0.2s;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color .2s, background .2s;
     }
 
-    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .nav-links a.active { color: var(--text); }
 
     .nav-cta {
-      background: var(--accent);
-      color: #fff !important;
-      padding: 7px 18px;
-      border-radius: 8px;
-      font-weight: 600 !important;
+      background: var(--purple);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: opacity .2s;
     }
 
-    .nav-cta:hover { opacity: 0.85; }
+    .nav-cta:hover { opacity: .85; }
 
-    /* ── SECTIONS ── */
-    section { padding: 100px 32px; max-width: 1100px; margin: 0 auto; }
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: none;
+    }
+
+    .hamburger span { display: block; width: 18px; height: 2px; background: var(--text); border-radius: 2px; transition: .2s; }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      inset: 60px 0 auto;
+      z-index: 99;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 10px 12px; border-radius: 6px; }
+    .mobile-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
 
     /* ── HERO ── */
-    #hero {
-      padding-top: 160px;
-      padding-bottom: 120px;
+    .hero {
+      padding: 160px 40px 80px;
+      max-width: 820px;
+      margin: 0 auto;
       text-align: center;
     }
 
-    .hero-badge {
+    .hero-tag {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 999px;
-      padding: 5px 16px;
-      font-size: 13px;
-      color: var(--accent2);
-      font-weight: 500;
-      margin-bottom: 28px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--purple);
+      border: 1px solid rgba(129,140,248,.3);
+      background: rgba(129,140,248,.08);
+      padding: 4px 14px;
+      border-radius: 99px;
+      letter-spacing: .5px;
+      margin-bottom: 32px;
     }
 
-    .hero-title {
-      font-size: clamp(36px, 6vw, 68px);
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 72px);
       font-weight: 800;
-      letter-spacing: -1.5px;
-      line-height: 1.1;
+      letter-spacing: -2.5px;
+      line-height: 1.05;
       margin-bottom: 24px;
     }
 
-    .hero-title .highlight {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    .hero h1 .g {
+      background: linear-gradient(135deg, #818cf8, #a78bfa 40%, #6ee7b7);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    .hero-sub {
+    .hero p {
       font-size: 18px;
       color: var(--muted);
-      max-width: 600px;
+      max-width: 520px;
       margin: 0 auto 40px;
-    }
-
-    .hero-actions {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      padding: 12px 28px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: opacity 0.2s, transform 0.2s;
-    }
-
-    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
-
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 12px 28px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-
-    .btn-secondary:hover { border-color: var(--accent); transform: translateY(-1px); }
-
-    /* ── ZEN BAR DEMO ── */
-    .zenbar-demo {
-      margin-top: 64px;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .zenbar-pill {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 20px;
-      font-size: 14px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.2s, border-color 0.2s;
-      cursor: default;
-    }
-
-    .zenbar-pill:hover { transform: translateY(-2px); border-color: var(--accent); }
-    .pill-flow     { color: var(--flow); }
-    .pill-friction { color: var(--friction); }
-    .pill-fatigue  { color: var(--fatigue); }
-    .pill-overload { color: var(--overload); }
-
-    /* ── SECTION HEADERS ── */
-    .section-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: clamp(26px, 4vw, 40px);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 16px;
-    }
-
-    .section-sub {
-      font-size: 17px;
-      color: var(--muted);
-      max-width: 580px;
-      margin-bottom: 56px;
-    }
-
-    /* ── STATES ── */
-    .states-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .state-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 24px;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-
-    .state-card:hover { transform: translateY(-3px); }
-    .state-card.flow     { border-top: 3px solid var(--flow); }
-    .state-card.friction { border-top: 3px solid var(--friction); }
-    .state-card.fatigue  { border-top: 3px solid var(--fatigue); }
-    .state-card.overload { border-top: 3px solid var(--overload); }
-
-    .state-icon { font-size: 28px; margin-bottom: 12px; }
-
-    .state-name {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .state-score {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-
-    .state-desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
-
-    /* ── FEATURES ── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-
-    .feature-card:hover { transform: translateY(-3px); border-color: var(--accent); }
-
-    .feature-icon {
-      font-size: 32px;
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    .feature-title {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
-
-    .feature-tag {
-      display: inline-block;
-      margin-top: 14px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: rgba(99,102,241,0.12);
-      color: var(--accent2);
-    }
-
-    /* ── HOW IT WORKS ── */
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      position: relative;
-    }
-
-    .steps::before {
-      content: '';
-      position: absolute;
-      left: 23px;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: linear-gradient(to bottom, var(--accent), transparent);
-    }
-
-    .step {
-      display: flex;
-      gap: 24px;
-      padding: 0 0 40px 0;
-    }
-
-    .step-num {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: #fff;
-      font-weight: 800;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      position: relative;
-      z-index: 1;
-    }
-
-    .step-content { padding-top: 8px; }
-
-    .step-title {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .step-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
-
-    /* ── SCORING ── */
-    .score-formula {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 32px;
-      margin-bottom: 28px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 16px;
-      text-align: center;
-      color: var(--accent2);
-      letter-spacing: 0.3px;
-    }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
-    }
-
-    .metric-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px 20px;
-    }
-
-    .metric-name {
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .metric-weight {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 6px;
-    }
-
-    .metric-desc { font-size: 12px; color: var(--muted); }
-
-    /* ── ARCHITECTURE ── */
-    .arch-diagram {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-
-    @media (max-width: 700px) { .arch-diagram { grid-template-columns: 1fr; } }
-
-    .arch-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-    }
-
-    .arch-box.optional { border-style: dashed; }
-
-    .arch-title {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 18px;
-    }
-
-    .arch-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 12px;
-      font-size: 14px;
-    }
-
-    .arch-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent);
-      margin-top: 6px;
-      flex-shrink: 0;
-    }
-
-    .arch-item-name { font-weight: 600; }
-    .arch-item-desc { color: var(--muted); font-size: 13px; }
-
-    .arch-arrow {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      color: var(--muted);
-      padding: 12px;
-    }
-
-    /* ── PRIVACY ── */
-    .privacy-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }
-
-    .privacy-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      display: flex;
-      gap: 16px;
-    }
-
-    .privacy-icon { font-size: 24px; flex-shrink: 0; }
-
-    .privacy-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .privacy-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-
-    /* ── SETUP ── */
-    .setup-steps {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-bottom: 40px;
-    }
-
-    .setup-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-    }
-
-    .setup-step-num {
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 14px;
-    }
-
-    .setup-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .setup-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-
-    pre {
-      background: #0d0f18;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px 24px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 13px;
-      color: #a5f3fc;
-      overflow-x: auto;
       line-height: 1.7;
     }
 
-    pre .comment { color: var(--muted); }
-    pre .cmd     { color: #86efac; }
-
-    /* ── TEAM ── */
-    .team-grid {
+    .hero-btns {
       display: flex;
-      gap: 20px;
+      gap: 12px;
+      justify-content: center;
       flex-wrap: wrap;
     }
 
-    .team-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 32px;
-      text-align: center;
-      min-width: 180px;
-      transition: transform 0.2s, border-color 0.2s;
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: transform .15s, opacity .15s, border-color .15s;
     }
 
-    .team-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-fill { background: var(--purple); color: #fff; }
+    .btn-fill:hover { opacity: .88; }
+    .btn-outline { color: var(--text); border: 1px solid var(--border); background: transparent; }
+    .btn-outline:hover { border-color: rgba(129,140,248,.5); background: rgba(255,255,255,.04); }
 
-    .team-avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      margin: 0 auto 14px;
+    /* ── PILLS ── */
+    .pills {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 56px;
+    }
+
+    .pill {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      padding: 6px 14px;
+      border-radius: 7px;
+      border: 1px solid;
+      background: var(--surface);
+      cursor: default;
+      transition: transform .2s;
+    }
+
+    .pill:hover { transform: translateY(-2px); }
+    .pill-flow     { color: var(--green);  border-color: rgba(63,185,80,.3); }
+    .pill-friction { color: var(--amber);  border-color: rgba(210,153,34,.3); }
+    .pill-fatigue  { color: var(--orange); border-color: rgba(240,136,62,.3); }
+    .pill-overload { color: var(--red);    border-color: rgba(248,81,73,.3); }
+
+    /* ── SCREENSHOT ── */
+    .screen-section {
+      padding: 0 40px 100px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .screen-label {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .screen-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 0 0 1px rgba(129,140,248,.12),
+        0 40px 100px rgba(0,0,0,.6),
+        0 0 100px rgba(129,140,248,.06);
+      transition: transform .4s ease, box-shadow .4s ease;
+    }
+
+    .screen-wrap:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 0 0 1px rgba(129,140,248,.2),
+        0 48px 120px rgba(0,0,0,.65),
+        0 0 140px rgba(129,140,248,.1);
+    }
+
+    .chrome {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
+      gap: 12px;
+      padding: 11px 16px;
+      background: #1c2128;
+      border-bottom: 1px solid var(--border);
     }
 
-    .team-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-    .team-role { font-size: 13px; color: var(--muted); }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .url-bar {
+      flex: 1;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'SF Mono','Fira Code',monospace;
+    }
+
+    .screen-img {
+      width: 100%;
+      display: block;
+      min-height: 200px;
+      background: #1e1e1e;
+    }
+
+    .screen-img img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .no-img {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 80px 40px;
+      color: var(--muted);
+      font-size: 14px;
+      background: linear-gradient(160deg, #1a1f2e, #0d1117);
+    }
+
+    .no-img svg { opacity: .3; }
+    .no-img code {
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 5px;
+      color: var(--purple);
+    }
+
+    /* ── DIVIDER ── */
+    hr { border: none; border-top: 1px solid var(--border); }
+
+    /* ── HIGHLIGHTS ── */
+    .highlights {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .hl-cell {
+      background: var(--bg);
+      padding: 40px 36px;
+      transition: background .2s;
+    }
+
+    .hl-cell:hover { background: var(--surface); }
+
+    .hl-icon { font-size: 28px; margin-bottom: 18px; display: block; }
+    .hl-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; letter-spacing: -.3px; }
+    .hl-desc { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* ── FEATURE SPLIT ── */
+    .split {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .split.flip { direction: rtl; }
+    .split.flip > * { direction: ltr; }
+
+    .split-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 14px;
+    }
+
+    .split h2 {
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 800;
+      letter-spacing: -.8px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .split p { font-size: 15px; color: var(--muted); line-height: 1.75; margin-bottom: 16px; }
+
+    .split-visual {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .sv-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .sv-label { color: var(--muted); width: 100px; flex-shrink: 0; }
+    .sv-bar { flex: 1; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .sv-fill { height: 100%; border-radius: 99px; }
+    .sv-val { font-size: 12px; color: var(--muted); width: 32px; text-align: right; flex-shrink: 0; }
+
+    .formula {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 13px;
+      color: #a5f3fc;
+      overflow-x: auto;
+      margin-top: 24px;
+    }
+
+    /* ── PRIVACY TABLE ── */
+    .privacy-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 100px 40px;
+    }
+
+    .privacy-section .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 14px;
+    }
+
+    .privacy-section h2 {
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 800;
+      letter-spacing: -.8px;
+      margin-bottom: 12px;
+    }
+
+    .privacy-section > p {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+
+    .privacy-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .privacy-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .privacy-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.55;
+      vertical-align: top;
+    }
+
+    .privacy-table tr:last-child td { border-bottom: none; }
+    .privacy-table tr:hover td { background: var(--surface); }
+
+    .privacy-table td:first-child { font-weight: 600; white-space: nowrap; }
+    .privacy-table td:last-child { color: var(--muted); }
+    .check { color: var(--green); font-size: 16px; }
+
+    /* ── SETUP ── */
+    .setup-section {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      text-align: center;
+    }
+
+    .setup-section .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 14px;
+    }
+
+    .setup-section h2 {
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 800;
+      letter-spacing: -.8px;
+      margin-bottom: 12px;
+    }
+
+    .setup-section > p {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      text-align: left;
+      overflow-x: auto;
+    }
+
+    .c { color: var(--muted); }
+    .k { color: #7ee787; }
+    .s { color: #a5f3fc; }
 
     /* ── FOOTER ── */
     footer {
       border-top: 1px solid var(--border);
-      padding: 32px;
+      padding: 40px;
       text-align: center;
-      color: var(--muted);
       font-size: 13px;
+      color: var(--muted);
     }
 
-    footer a { color: var(--accent); text-decoration: none; }
+    footer a { color: var(--purple); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
 
-    /* ── DIVIDER ── */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 0;
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
     }
 
-    /* ── FADE IN ANIMATION ── */
-    .fade-in {
+    /* ── FADE ── */
+    .fade {
       opacity: 0;
       transform: translateY(20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
+      transition: opacity .5s ease, transform .5s ease;
     }
 
-    .fade-in.visible {
-      opacity: 1;
-      transform: translateY(0);
+    .fade.in { opacity: 1; transform: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 0 20px; }
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+      .highlights { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; gap: 40px; }
+      .split.flip { direction: ltr; }
+      .hero { padding: 130px 24px 60px; }
+      .screen-section { padding: 0 24px 80px; }
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 { letter-spacing: -1.5px; }
+      .highlights { border-radius: 0; border-left: none; border-right: none; }
+      .privacy-table th:last-child,
+      .privacy-table td:last-child { display: none; }
     }
   </style>
 </head>
@@ -591,411 +566,265 @@
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">Zen<span>Node</span></div>
+  <a href="#" class="logo">Zen<em>Node</em></a>
+
   <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#how-it-works">How It Works</a></li>
-    <li><a href="#scoring">Scoring</a></li>
-    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#screenshot">Marketplace</a></li>
+    <li><a href="#how">How it Works</a></li>
     <li><a href="#privacy">Privacy</a></li>
     <li><a href="#setup">Setup</a></li>
-    <li><a href="https://github.com/ryadavtmc/zen-node" class="nav-cta">View on GitHub →</a></li>
   </ul>
+
+  <a href="https://github.com/ryadavtmc/zen-node" class="nav-cta" target="_blank" rel="noopener">View on GitHub</a>
+
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
+<div class="mobile-nav" id="mobile-nav">
+  <a href="#screenshot">Marketplace</a>
+  <a href="#how">How it Works</a>
+  <a href="#privacy">Privacy</a>
+  <a href="#setup">Setup</a>
+  <a href="https://github.com/ryadavtmc/zen-node" target="_blank" rel="noopener">GitHub →</a>
+</div>
+
 <!-- HERO -->
-<section id="hero">
-  <div class="hero-badge">🧠 Mental Health Hackathon 2026</div>
-  <h1 class="hero-title">
+<div class="hero">
+  <div class="hero-tag">🧠 Nepal US Mental Health Hackathon 2026</div>
+  <h1>
     Your IDE monitors your code.<br>
-    <span class="highlight">ZenNode monitors you.</span>
+    <span class="g">ZenNode monitors you.</span>
   </h1>
-  <p class="hero-sub">
-    Real-time cognitive load monitoring inside VS Code. Detects when your brain is overloaded — before burnout sets in — using behavioral biomarkers, not surveys.
+  <p>
+    Real-time cognitive load detection inside VS Code — using behavioral signals, not surveys. Catches burnout before it catches you.
   </p>
-  <div class="hero-actions">
-    <a href="#setup" class="btn-primary">Get Started</a>
-    <a href="https://github.com/ryadavtmc/zen-node" class="btn-secondary">View on GitHub</a>
+  <div class="hero-btns">
+    <a href="#setup" class="btn btn-fill">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.66.56 4.223.71 2.603.882 1.013 1.459 0 2.03v14c0 .369.399.63.74.494 1.09-.44 2.47-.818 3.622-.93C5.944 15.45 7.3 15.7 8 16.5c.7-.8 2.056-1.05 3.638-.906 1.152.112 2.532.49 3.622.93.34.136.74-.125.74-.494v-14c-1.013-.57-2.603-1.148-4.223-1.32C10.34.56 8.985.936 8 1.783z"/></svg>
+      Install Extension
+    </a>
+    <a href="https://github.com/ryadavtmc/zen-node" class="btn btn-outline" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View Source
+    </a>
   </div>
 
-  <div class="zenbar-demo">
-    <div class="zenbar-pill pill-flow">🟢 Flow &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 12</div>
-    <div class="zenbar-pill pill-friction">🟡 Friction &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 45</div>
-    <div class="zenbar-pill pill-fatigue">🟠 Fatigue &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 68</div>
-    <div class="zenbar-pill pill-overload">🔴 Overload &nbsp;<span style="opacity:.5">·</span>&nbsp; Score: 87</div>
+  <div class="pills">
+    <div class="pill pill-flow">🟢 Flow · 0–30</div>
+    <div class="pill pill-friction">🟡 Friction · 31–60</div>
+    <div class="pill pill-fatigue">🟠 Fatigue · 61–80</div>
+    <div class="pill pill-overload">🔴 Overload · 81–100</div>
   </div>
-</section>
+</div>
 
-<hr class="divider">
-
-<!-- COGNITIVE STATES -->
-<section id="states" class="fade-in">
-  <div class="section-label">Cognitive States</div>
-  <h2 class="section-title">Four states. One goal — catch overload early.</h2>
-  <p class="section-sub">ZenNode scores your brain every 5 seconds and classifies it into one of four states.</p>
-
-  <div class="states-grid">
-    <div class="state-card flow">
-      <div class="state-icon">🟢</div>
-      <div class="state-name" style="color:var(--flow)">Flow</div>
-      <div class="state-score">Score 0 – 30</div>
-      <div class="state-desc">Deep focus, everything clicking. ZenNode stays completely invisible — no interruptions, no nudges.</div>
+<!-- MARKETPLACE SCREENSHOT -->
+<div class="screen-section fade" id="screenshot">
+  <p class="screen-label">Live in the VS Code Marketplace</p>
+  <div class="screen-wrap">
+    <div class="chrome">
+      <div class="dots">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="url-bar">🔒 marketplace.visualstudio.com · zennode.zennode · v0.1.0</div>
     </div>
-    <div class="state-card friction">
-      <div class="state-icon">🟡</div>
-      <div class="state-name" style="color:var(--friction)">Friction</div>
-      <div class="state-score">Score 31 – 60</div>
-      <div class="state-desc">Frequent edits, rising undo rate. Working hard but managing. A gentle heads-up may appear.</div>
-    </div>
-    <div class="state-card fatigue">
-      <div class="state-icon">🟠</div>
-      <div class="state-name" style="color:var(--fatigue)">Fatigue</div>
-      <div class="state-score">Score 61 – 80</div>
-      <div class="state-desc">Long idle gaps, slowed typing. Brain is tiring. Actionable nudges begin — focus tips, tab cleanup.</div>
-    </div>
-    <div class="state-card overload">
-      <div class="state-icon">🔴</div>
-      <div class="state-name" style="color:var(--overload)">Overload</div>
-      <div class="state-score">Score 81 – 100</div>
-      <div class="state-desc">Rapid tab-cycling, pasting AI blocks without review. Full intervention: amber theme + LLM message + breathing prompt.</div>
+    <div class="screen-img">
+      <img
+        src="images/marketplace-screenshot.png"
+        alt="ZenNode VS Code Marketplace page"
+        onerror="this.parentElement.innerHTML='<div class=\'no-img\'><svg width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg><p>Save the screenshot to</p><code>docs/images/marketplace-screenshot.png</code></div>'"
+      />
     </div>
   </div>
-</section>
+</div>
 
-<hr class="divider">
+<hr>
 
-<!-- FEATURES -->
-<section id="features" class="fade-in">
-  <div class="section-label">Features</div>
-  <h2 class="section-title">Everything your brain needs. Nothing it doesn't.</h2>
-  <p class="section-sub">All features are privacy-first. Scoring runs locally. Cloud is optional.</p>
-
-  <div class="features-grid">
-    <div class="feature-card">
-      <span class="feature-icon">🔍</span>
-      <div class="feature-title">Behavioral Trace Collector</div>
-      <div class="feature-desc">Silently tracks 6 behavioral signals every 5 seconds — keystrokes, backspaces, tab switches, undo actions, idle time, and paste events. Never records what you type, only counts.</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">🧮</span>
-      <div class="feature-title">Local Cognitive Scorer</div>
-      <div class="feature-desc">Pure TypeScript weighted formula with EMA smoothing (α=0.6) produces a 0–100 score entirely inside the extension. No network call, zero latency. Needs sustained signals — no jittery false alarms.</div>
-      <span class="feature-tag">Layer A · No Server</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">🎨</span>
-      <div class="feature-title">Zen Bar</div>
-      <div class="feature-desc">Always-visible status bar showing your current state with emoji and score. Rich tooltip reveals per-metric breakdown with visual bar charts. Click to open the live dashboard.</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">🌅</span>
-      <div class="feature-title">Warm Amber Theme Shift</div>
-      <div class="feature-desc">At overload, your editor's colors shift to warm amber — 30+ VS Code tokens overridden. Clinically inspired: warm light reduces cortisol. Hysteresis prevents flickering (ON at 80, OFF below 60).</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">🫁</span>
-      <div class="feature-title">Guided Breathing Exercise</div>
-      <div class="feature-desc">Animated 4-7-8 breathing webview (Inhale 4s → Hold 7s → Exhale 8s × 3 cycles). Pulsing orb, SVG progress ring, ambient particles. Clinically proven to reduce acute anxiety within 60 seconds.</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">📈</span>
-      <div class="feature-title">Live Dashboard</div>
-      <div class="feature-desc">Score gauge, per-metric bars, session timeline chart, state time distribution, and AI insight banner — all updating live every 5 seconds. Opens side-by-side with your editor.</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">🔔</span>
-      <div class="feature-title">3-Tier Notification System</div>
-      <div class="feature-desc">Fatigue nudges at orange zone (5-min cooldown), overload interventions at red zone (3-min cooldown), and recovery celebrations when you return to flow. Non-judgmental and actionable.</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">🤖</span>
-      <div class="feature-title">LLM-Powered Interventions</div>
-      <div class="feature-desc">At overload, an AI (Groq/OpenAI) generates a CBT-based message — like a caring colleague, not a therapist. Under 30 words, actionable, never preachy. The LLM sees only behavioral numbers, never your code.</div>
-      <span class="feature-tag">Layer B · Cloud Optional</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">👥</span>
-      <div class="feature-title">Team Health Sync</div>
-      <div class="feature-desc">Share anonymized session summaries with your team's manager dashboard. See collective cognitive load trends. Opt-in only — identified by a random anonymous ID, never your name or email.</div>
-      <span class="feature-tag">Layer B · Cloud Optional</span>
-    </div>
-    <div class="feature-card">
-      <span class="feature-icon">💾</span>
-      <div class="feature-title">Session Persistence</div>
-      <div class="feature-desc">Auto-saves sessions to VS Code's global storage. Survives editor restarts — EMA score is restored so monitoring resumes seamlessly. Completed sessions are archived with full timeline breakdown.</div>
-      <span class="feature-tag">Always On · Local</span>
-    </div>
+<!-- 3 HIGHLIGHTS -->
+<div class="highlights fade">
+  <div class="hl-cell">
+    <span class="hl-icon">🧮</span>
+    <div class="hl-title">100% local scoring</div>
+    <div class="hl-desc">The cognitive load algorithm runs entirely inside the extension. Your code never leaves your machine. No API key required to start.</div>
   </div>
-</section>
+  <div class="hl-cell">
+    <span class="hl-icon">⚡</span>
+    <div class="hl-title">5-second feedback loop</div>
+    <div class="hl-desc">Behavioral signals are sampled every 5 seconds, smoothed with EMA (α=0.6), and classified into one of four states — instantly.</div>
+  </div>
+  <div class="hl-cell">
+    <span class="hl-icon">🔒</span>
+    <div class="hl-title">Zero telemetry</div>
+    <div class="hl-desc">No analytics, no crash reporting, no phone-home. ZenNode cannot phone home because it has no such code. Verify it yourself on GitHub.</div>
+  </div>
+</div>
 
-<hr class="divider">
+<hr>
 
 <!-- HOW IT WORKS -->
-<section id="how-it-works" class="fade-in">
-  <div class="section-label">How It Works</div>
-  <h2 class="section-title">From keystroke to intervention in 5 seconds.</h2>
-  <p class="section-sub">ZenNode runs a tight loop — collect, score, act — every 5 seconds, entirely in the background.</p>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-content">
-        <div class="step-title">Collect behavioral signals</div>
-        <div class="step-desc">The TraceCollector counts keystrokes, backspaces, tab switches, undo actions, idle time, and paste events every 5 seconds. It records counts only — never the content of what you type.</div>
-      </div>
+<div class="split fade" id="how">
+  <div>
+    <div class="split-label">How it Works</div>
+    <h2>Behavior → Score → Action.<br>Every 5 seconds.</h2>
+    <p>ZenNode watches 6 passive behavioral signals — keystrokes, backspaces, tab switches, undos, idle time, pastes — and computes a weighted cognitive load score using a transparent formula.</p>
+    <p>No surveys. No wearables. No interruptions in flow state.</p>
+    <div class="formula">S = 0.25·SwitchRate + 0.20·ErrorRate<br>  + 0.25·UndoRate + 0.15·IdleRatio<br>  + 0.15·PasteRatio</div>
+  </div>
+  <div class="split-visual">
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">SwitchRate</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:78%;background:var(--orange)"></div></div>
+      <span class="sv-val">78</span>
     </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-content">
-        <div class="step-title">Score locally with EMA</div>
-        <div class="step-desc">The scorer normalizes each signal into a 0–100 metric, applies weights, and computes a cognitive load score. An Exponential Moving Average (α=0.6) smooths the score to prevent jitter. All math runs in TypeScript — no server needed.</div>
-      </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">ErrorRate</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:42%;background:var(--amber)"></div></div>
+      <span class="sv-val">42</span>
     </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-content">
-        <div class="step-title">Classify the state</div>
-        <div class="step-desc">The score is mapped to one of four states: Flow (0–30), Friction (31–60), Fatigue (61–80), or Overload (81–100). The Zen Bar updates instantly in the status bar.</div>
-      </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">UndoRate</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:91%;background:var(--red)"></div></div>
+      <span class="sv-val">91</span>
     </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-content">
-        <div class="step-title">Intervene at the right moment</div>
-        <div class="step-desc">Depending on the state, ZenNode triggers the appropriate response: theme shift at overload, notification nudge at fatigue, LLM-generated message via the optional cloud at overload.</div>
-      </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">IdleRatio</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:15%;background:var(--green)"></div></div>
+      <span class="sv-val">15</span>
     </div>
-    <div class="step">
-      <div class="step-num">5</div>
-      <div class="step-content">
-        <div class="step-title">Sync to team (optional)</div>
-        <div class="step-desc">Every ~50 seconds, an anonymized session summary is pushed to the cloud. Managers see aggregated team health — never individual raw data. You control the connection; it's opt-in only.</div>
-      </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">PasteRatio</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:60%;background:var(--amber)"></div></div>
+      <span class="sv-val">60</span>
+    </div>
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="color:var(--muted);font-size:12px">Cognitive Load Score</span>
+      <span style="font-size:22px;font-weight:800;color:var(--red)">87 · 🔴 Overload</span>
     </div>
   </div>
-</section>
+</div>
 
-<hr class="divider">
-
-<!-- SCORING -->
-<section id="scoring" class="fade-in">
-  <div class="section-label">Scoring Algorithm</div>
-  <h2 class="section-title">Transparent math. No black box.</h2>
-  <p class="section-sub">The cognitive load score is a weighted sum of 5 normalized behavioral metrics, smoothed with EMA.</p>
-
-  <div class="score-formula">
-    S = 0.25·SwitchRate + 0.20·ErrorRate + 0.25·UndoRate + 0.15·IdleRatio + 0.15·PasteRatio
-  </div>
-
-  <div class="metrics-grid">
-    <div class="metric-card">
-      <div class="metric-name">SwitchRate</div>
-      <div class="metric-weight">25%</div>
-      <div class="metric-desc">Tab switches per minute. Strongest signal of context-switching overload.</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-name">ErrorRate</div>
-      <div class="metric-weight">20%</div>
-      <div class="metric-desc">Backspaces ÷ total keystrokes. Indicates struggle and friction.</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-name">UndoRate</div>
-      <div class="metric-weight">25%</div>
-      <div class="metric-desc">Undos per minute. Directly correlates with decision fatigue.</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-name">IdleRatio</div>
-      <div class="metric-weight">15%</div>
-      <div class="metric-desc">Idle seconds ÷ total seconds. Signals disengagement or exhaustion.</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-name">PasteRatio</div>
-      <div class="metric-weight">15%</div>
-      <div class="metric-desc">Pasted chars ÷ total chars. Flags AI dump without review behavior.</div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider">
-
-<!-- ARCHITECTURE -->
-<section id="architecture" class="fade-in">
-  <div class="section-label">Architecture</div>
-  <h2 class="section-title">Two layers. Use only what you need.</h2>
-  <p class="section-sub">Layer A is always on, always local, zero setup. Layer B is opt-in and adds cloud features.</p>
-
-  <div class="arch-diagram">
-    <div class="arch-box">
-      <div class="arch-title">Layer A — VS Code Extension (always local)</div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">traceCollector.ts</div><div class="arch-item-desc">Captures behavioral signals every 5s</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">scorer.ts</div><div class="arch-item-desc">Weighted EMA scoring, 0–100</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">zenBar.ts</div><div class="arch-item-desc">Live state indicator in status bar</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">themeShifter.ts</div><div class="arch-item-desc">Warm amber overlay at overload</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">dashboard.ts</div><div class="arch-item-desc">Live metrics webview</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">breathingExercise.ts</div><div class="arch-item-desc">4-7-8 guided breathing webview</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">sessionStore.ts</div><div class="arch-item-desc">JSON persistence in VS Code global storage</div></div></div>
-    </div>
-    <div class="arch-box optional">
-      <div class="arch-title">Layer B — Cloud API · FastAPI :8421 (optional)</div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">auth.py</div><div class="arch-item-desc">Signup, login, JWT token management</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">llm_interpreter.py</div><div class="arch-item-desc">CBT-grounded interventions via Groq/OpenAI</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">routes/sync.py</div><div class="arch-item-desc">Receive anonymized session summaries</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">routes/dashboard.py</div><div class="arch-item-desc">Team overview & trend for managers</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">database.py</div><div class="arch-item-desc">SQLite via SQLAlchemy</div></div></div>
-      <div class="arch-item"><div class="arch-dot"></div><div><div class="arch-item-name">static/dashboard.html</div><div class="arch-item-desc">Manager SPA served at :8421/</div></div></div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider">
+<hr>
 
 <!-- PRIVACY -->
-<section id="privacy" class="fade-in">
+<div class="privacy-section fade" id="privacy">
   <div class="section-label">Privacy</div>
-  <h2 class="section-title">Privacy is the foundation, not a feature.</h2>
-  <p class="section-sub">Mental health tooling only works if developers trust it. Every privacy claim below is enforced in code — not just policy.</p>
+  <h2>Designed to be trusted.</h2>
+  <p>Mental health tooling only works if developers trust it. Every guarantee below is enforced by the code — not a policy document.</p>
 
-  <div class="privacy-grid">
-    <div class="privacy-card">
-      <div class="privacy-icon">🖥️</div>
-      <div>
-        <div class="privacy-title">Scoring runs 100% locally</div>
-        <div class="privacy-desc">The TypeScript scorer runs inside the extension process. No data leaves your machine for cognitive scoring. No server required.</div>
-      </div>
-    </div>
-    <div class="privacy-card">
-      <div class="privacy-icon">🔢</div>
-      <div>
-        <div class="privacy-title">Counts only, never content</div>
-        <div class="privacy-desc">ZenNode records how many keystrokes, never what you typed. File names, variable names, and source code are never accessed.</div>
-      </div>
-    </div>
-    <div class="privacy-card">
-      <div class="privacy-icon">🤖</div>
-      <div>
-        <div class="privacy-title">LLM sees metadata, not code</div>
-        <div class="privacy-desc">The AI receives only anonymized behavioral numbers — e.g., "tabSwitches: 18, undos: 12". Your source code is never sent anywhere.</div>
-      </div>
-    </div>
-    <div class="privacy-card">
-      <div class="privacy-icon">👤</div>
-      <div>
-        <div class="privacy-title">Team sync is opt-in and anonymized</div>
-        <div class="privacy-desc">Cloud sync only activates when you choose to connect. Sessions are identified by a random anonymous_id — never your name or email.</div>
-      </div>
-    </div>
-    <div class="privacy-card">
-      <div class="privacy-icon">📵</div>
-      <div>
-        <div class="privacy-title">No telemetry, ever</div>
-        <div class="privacy-desc">ZenNode has no analytics, no crash reporting, no phone-home. It cannot phone home because it has no such code.</div>
-      </div>
-    </div>
-    <div class="privacy-card">
-      <div class="privacy-icon">🔍</div>
-      <div>
-        <div class="privacy-title">Fully auditable</div>
-        <div class="privacy-desc">The entire codebase is open source. Every privacy claim above can be verified line-by-line on GitHub.</div>
-      </div>
-    </div>
-  </div>
-</section>
+  <table class="privacy-table">
+    <thead>
+      <tr>
+        <th>Guarantee</th>
+        <th>How It's Enforced</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;Scoring runs locally</td>
+        <td><code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">src/scorer.ts</code> runs inside the extension process — no data leaves for cognitive scoring</td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;Counts only, never content</td>
+        <td><code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">traceCollector.ts</code> records <em>how many</em> keystrokes, never <em>what</em> you typed</td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;LLM sees metadata, not code</td>
+        <td>The AI receives only anonymized numbers — e.g. <code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">"tabSwitches: 18, undos: 12"</code></td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;Team sync is opt-in</td>
+        <td>Cloud sync never activates unless you explicitly connect. Sessions use a random <code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">anonymous_id</code></td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;No telemetry, ever</td>
+        <td>ZenNode cannot phone home — it has no analytics, no crash reporter, no such code</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-<hr class="divider">
+<hr>
 
 <!-- SETUP -->
-<section id="setup" class="fade-in">
-  <div class="section-label">Setup</div>
-  <h2 class="section-title">Up and running in 2 minutes.</h2>
-  <p class="section-sub">Requirements: VS Code ≥ 1.85 · Node.js ≥ 18 · Python ≥ 3.10 (cloud only)</p>
+<div class="setup-section fade" id="setup">
+  <div class="section-label">Get Started</div>
+  <h2>Up and running in 2 minutes.</h2>
+  <p>VS Code ≥ 1.85 &nbsp;·&nbsp; Node.js ≥ 18 &nbsp;·&nbsp; Python ≥ 3.10 (cloud only)</p>
 
-  <div class="setup-steps">
-    <div class="setup-card">
-      <div class="setup-step-num">1</div>
-      <div class="setup-title">Clone & install</div>
-      <div class="setup-desc">Clone the repo and install Node.js dependencies.</div>
-    </div>
-    <div class="setup-card">
-      <div class="setup-step-num">2</div>
-      <div class="setup-title">Build the extension</div>
-      <div class="setup-desc">Compile TypeScript and package as a .vsix file.</div>
-    </div>
-    <div class="setup-card">
-      <div class="setup-step-num">3</div>
-      <div class="setup-title">Install in VS Code</div>
-      <div class="setup-desc">Install the .vsix and reload VS Code. The Zen Bar appears.</div>
-    </div>
-    <div class="setup-card">
-      <div class="setup-step-num">4</div>
-      <div class="setup-title">Start the cloud (optional)</div>
-      <div class="setup-desc">Run the FastAPI backend for LLM interventions and team sync.</div>
-    </div>
+  <pre><span class="c"># Clone and install</span>
+<span class="k">git clone</span> <span class="s">https://github.com/ryadavtmc/zen-node.git</span>
+<span class="k">cd</span> zen-node &amp;&amp; <span class="k">npm install</span>
+
+<span class="c"># Build &amp; install the extension</span>
+<span class="k">npm run compile</span> &amp;&amp; <span class="k">vsce package</span>
+<span class="k">code --install-extension</span> zennode-0.1.0.vsix
+
+<span class="c"># Optional: start the cloud backend</span>
+<span class="k">cd</span> cloud &amp;&amp; pip install -r requirements.txt
+<span class="k">uvicorn</span> main:app --port 8421</pre>
+
+  <div style="margin-top:28px">
+    <a href="https://github.com/ryadavtmc/zen-node" class="btn btn-outline" target="_blank" rel="noopener" style="display:inline-flex">
+      Full documentation on GitHub →
+    </a>
   </div>
-
-  <pre><span class="comment"># 1. Clone and install</span>
-<span class="cmd">git clone https://github.com/ryadavtmc/zen-node.git
-cd zen-node
-npm install</span>
-
-<span class="comment"># 2. Build and install the extension</span>
-<span class="cmd">npm run compile
-vsce package
-code --install-extension zennode-0.1.0.vsix</span>
-
-<span class="comment"># 3. Start the cloud backend (optional)</span>
-<span class="cmd">cd cloud
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --host 127.0.0.1 --port 8421 --reload</span></pre>
-</section>
-
-<hr class="divider">
-
-<!-- TEAM -->
-<section id="team" class="fade-in">
-  <div class="section-label">Team</div>
-  <h2 class="section-title">Built with care.</h2>
-  <p class="section-sub">Built for the Nepal US Mental Health Hackathon 2026.</p>
-
-  <div class="team-grid">
-    <div class="team-card">
-      <div class="team-avatar">RY</div>
-      <div class="team-name">Ravi Yadav</div>
-      <div class="team-role">Developer</div>
-    </div>
-    <div class="team-card">
-      <div class="team-avatar">HJ</div>
-      <div class="team-name">Himanshu Jha</div>
-      <div class="team-role">Developer</div>
-    </div>
-  </div>
-</section>
+</div>
 
 <!-- FOOTER -->
 <footer>
-  <p>MIT License · <a href="https://github.com/ryadavtmc/zen-node">GitHub</a> · <a href="https://github.com/ryadavtmc/zen-node">GitHub Repo</a></p>
-  <p style="margin-top:8px;font-size:12px">In 2026, your IDE catches bugs in your code. ZenNode catches the cracks in your mental health — before they become breakdowns.</p>
+  <div class="footer-links">
+    <a href="https://github.com/ryadavtmc/zen-node" target="_blank" rel="noopener">GitHub</a>
+    <a href="#screenshot">Marketplace</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#setup">Setup</a>
+  </div>
+  <p>MIT License &nbsp;·&nbsp; ZenNode v0.1.0 &nbsp;·&nbsp; Nepal US Mental Health Hackathon 2026</p>
+  <p style="margin-top:8px;font-size:12px;color:#484f58">
+    In 2026, your IDE catches bugs in your code. ZenNode catches cracks in your mental health — before they become breakdowns.
+  </p>
 </footer>
 
 <script>
-  // Fade-in on scroll
-  const observer = new IntersectionObserver((entries) => {
+  // Hamburger
+  const btn = document.getElementById('hamburger');
+  const nav = document.getElementById('mobile-nav');
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('open');
+    nav.classList.toggle('open');
+  });
+  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    btn.classList.remove('open');
+    nav.classList.remove('open');
+  }));
+
+  // Active nav
+  const links = document.querySelectorAll('.nav-links a');
+  const sections = document.querySelectorAll('[id]');
+  new IntersectionObserver(entries => {
     entries.forEach(e => {
       if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
+        links.forEach(l => l.classList.toggle('active', l.hash === '#' + e.target.id));
       }
     });
-  }, { threshold: 0.1 });
+  }, { rootMargin: '-20% 0px -70% 0px' }).observe(...sections);
 
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  // Fade-in
+  new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.07 }).observe = (() => {
+    const io = new IntersectionObserver((entries, obs) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
+      });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.fade').forEach(el => io.observe(el));
+    return io.observe.bind(io);
+  })();
 </script>
 </body>
 </html>
