@@ -96,6 +96,30 @@ class SyncResponse(BaseModel):
     message: str
 
 
+# ── LLM Intervention ──────────────────────────────────────────────────────────
+
+class InterventionRequest(BaseModel):
+    score: float = Field(ge=0, le=100)
+    state: str
+    switch_rate: float = Field(ge=0, le=100)
+    error_rate: float  = Field(ge=0, le=100)
+    undo_rate: float   = Field(ge=0, le=100)
+    idle_ratio: float  = Field(ge=0, le=100)
+    paste_ratio: float = Field(ge=0, le=100)
+    keystrokes: int    = Field(ge=0)
+    backspaces: int    = Field(ge=0)
+    tab_switches: int  = Field(ge=0)
+    undos: int         = Field(ge=0)
+    idle_seconds: float    = Field(ge=0)
+    duration_seconds: float = Field(ge=0)
+    pasted_chars: int  = Field(ge=0)
+    total_chars: int   = Field(ge=0)
+
+
+class InterventionResponse(BaseModel):
+    intervention: Optional[str]
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 class TeamDashboardResponse(BaseModel):

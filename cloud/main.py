@@ -33,6 +33,7 @@ from routes.auth import router as auth_router
 from routes.teams import router as teams_router
 from routes.sync import router as sync_router
 from routes.dashboard import router as dashboard_router
+from routes.intervention import router as intervention_router
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -69,6 +70,7 @@ app.include_router(auth_router)
 app.include_router(teams_router)
 app.include_router(sync_router)
 app.include_router(dashboard_router)
+app.include_router(intervention_router)
 
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
@@ -78,7 +80,13 @@ def health():
     return {"status": "ok", "service": "zennode-cloud-api", "version": "0.1.0"}
 
 
-@app.get("/ui", include_in_schema=False)
+@app.get("/", include_in_schema=False)
+def landing_page():
+    """Serve the ZenNode landing/features SPA."""
+    return FileResponse(_STATIC_DIR / "index.html")
+
+
+@app.get("/dashboard", include_in_schema=False)
 def manager_ui():
     """Serve the manager dashboard web UI."""
     return FileResponse(_STATIC_DIR / "dashboard.html")

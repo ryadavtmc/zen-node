@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenNode — Cognitive Load Monitor for VS Code</title>
+  <meta name="description" content="Stop burnout before it starts. Code with clarity, not exhaustion. Real-time cognitive load monitoring for VS Code." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #21262d;
+      --text:     #e6edf3;
+      --muted:    #848d97;
+      --purple:   #818cf8;
+      --green:    #3fb950;
+      --amber:    #d29922;
+      --orange:   #f0883e;
+      --red:      #f85149;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 60px;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .logo em { color: var(--purple); font-style: normal; }
+
+    .nav-links {
+      display: flex;
+      gap: 2px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color .2s, background .2s;
+    }
+
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .nav-links a.active { color: var(--text); }
+
+    .nav-cta {
+      background: var(--purple);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+
+    .nav-cta:hover { opacity: .85; }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: none;
+    }
+
+    .hamburger span { display: block; width: 18px; height: 2px; background: var(--text); border-radius: 2px; transition: .2s; }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      inset: 60px 0 auto;
+      z-index: 99;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 10px 12px; border-radius: 6px; }
+    .mobile-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 160px 40px 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--purple);
+      border: 1px solid rgba(129,140,248,.3);
+      background: rgba(129,140,248,.08);
+      padding: 4px 14px;
+      border-radius: 99px;
+      letter-spacing: .5px;
+      margin-bottom: 32px;
+    }
+
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 72px);
+      font-weight: 800;
+      letter-spacing: -2.5px;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 .g {
+      background: linear-gradient(135deg, #818cf8, #a78bfa 40%, #6ee7b7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: transform .15s, opacity .15s, border-color .15s;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn-fill { background: var(--purple); color: #fff; }
+    .btn-fill:hover { opacity: .88; }
+    .btn-outline { color: var(--text); border: 1px solid var(--border); background: transparent; }
+    .btn-outline:hover { border-color: rgba(129,140,248,.5); background: rgba(255,255,255,.04); }
+
+    /* ── PILLS ── */
+    .pills {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 56px;
+    }
+
+    .pill {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      padding: 6px 14px;
+      border-radius: 7px;
+      border: 1px solid;
+      background: var(--surface);
+      cursor: default;
+      transition: transform .2s;
+    }
+
+    .pill:hover { transform: translateY(-2px); }
+    .pill-flow     { color: var(--green);  border-color: rgba(63,185,80,.3); }
+    .pill-friction { color: var(--amber);  border-color: rgba(210,153,34,.3); }
+    .pill-fatigue  { color: var(--orange); border-color: rgba(240,136,62,.3); }
+    .pill-overload { color: var(--red);    border-color: rgba(248,81,73,.3); }
+
+    /* ── SCREENSHOT ── */
+    .screen-section {
+      padding: 0 40px 100px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .screen-label {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .screen-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 0 0 1px rgba(129,140,248,.12),
+        0 40px 100px rgba(0,0,0,.6),
+        0 0 100px rgba(129,140,248,.06);
+      transition: transform .4s ease, box-shadow .4s ease;
+    }
+
+    .screen-wrap:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 0 0 1px rgba(129,140,248,.2),
+        0 48px 120px rgba(0,0,0,.65),
+        0 0 140px rgba(129,140,248,.1);
+    }
+
+    .chrome {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 16px;
+      background: #1c2128;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .url-bar {
+      flex: 1;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'SF Mono','Fira Code',monospace;
+    }
+
+    .screen-img {
+      width: 100%;
+      display: block;
+      min-height: 200px;
+      background: #1e1e1e;
+    }
+
+    .screen-img img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .no-img {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 80px 40px;
+      color: var(--muted);
+      font-size: 14px;
+      background: linear-gradient(160deg, #1a1f2e, #0d1117);
+    }
+
+    .no-img svg { opacity: .3; }
+    .no-img code {
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 5px;
+      color: var(--purple);
+    }
+
+    /* ── DIVIDER ── */
+    hr { border: none; border-top: 1px solid var(--border); }
+
+    /* ── HIGHLIGHTS ── */
+    .highlights {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .hl-cell {
+      background: var(--bg);
+      padding: 40px 36px;
+      transition: background .2s;
+    }
+
+    .hl-cell:hover { background: var(--surface); }
+
+    .hl-icon { font-size: 28px; margin-bottom: 18px; display: block; }
+    .hl-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; letter-spacing: -.3px; }
+    .hl-desc { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* ── FEATURE SPLIT ── */
+    .split {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .split.flip { direction: rtl; }
+    .split.flip > * { direction: ltr; }
+
+    .split-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 14px;
+    }
+
+    .split h2 {
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 800;
+      letter-spacing: -.8px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .split p { font-size: 15px; color: var(--muted); line-height: 1.75; margin-bottom: 16px; }
+
+    .split-visual {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .sv-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .sv-label { color: var(--muted); width: 100px; flex-shrink: 0; }
+    .sv-bar { flex: 1; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .sv-fill { height: 100%; border-radius: 99px; }
+    .sv-val { font-size: 12px; color: var(--muted); width: 32px; text-align: right; flex-shrink: 0; }
+
+    .formula {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 13px;
+      color: #a5f3fc;
+      overflow-x: auto;
+      margin-top: 24px;
+    }
+
+    /* ── PRIVACY TABLE ── */
+    .privacy-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 100px 40px;
+    }
+
+    .privacy-section .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 14px;
+    }
+
+    .privacy-section h2 {
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 800;
+      letter-spacing: -.8px;
+      margin-bottom: 12px;
+    }
+
+    .privacy-section > p {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+
+    .privacy-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .privacy-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .privacy-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.55;
+      vertical-align: top;
+    }
+
+    .privacy-table tr:last-child td { border-bottom: none; }
+    .privacy-table tr:hover td { background: var(--surface); }
+
+    .privacy-table td:first-child { font-weight: 600; white-space: nowrap; }
+    .privacy-table td:last-child { color: var(--muted); }
+    .check { color: var(--green); font-size: 16px; }
+
+    /* ── SETUP ── */
+    .setup-section {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      text-align: center;
+    }
+
+    .setup-section .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 14px;
+    }
+
+    .setup-section h2 {
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 800;
+      letter-spacing: -.8px;
+      margin-bottom: 12px;
+    }
+
+    .setup-section > p {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      font-family: 'SF Mono','Fira Code',ui-monospace,monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      text-align: left;
+      overflow-x: auto;
+    }
+
+    .c { color: var(--muted); }
+    .k { color: #7ee787; }
+    .s { color: #a5f3fc; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    footer a { color: var(--purple); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    /* ── FADE ── */
+    .fade {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+
+    .fade.in { opacity: 1; transform: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 0 20px; }
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+      .highlights { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; gap: 40px; }
+      .split.flip { direction: ltr; }
+      .hero { padding: 130px 24px 60px; }
+      .screen-section { padding: 0 24px 80px; }
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 { letter-spacing: -1.5px; }
+      .highlights { border-radius: 0; border-left: none; border-right: none; }
+      .privacy-table th:last-child,
+      .privacy-table td:last-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">Zen<em>Node</em></a>
+
+  <ul class="nav-links">
+    <li><a href="#screenshot">Marketplace</a></li>
+    <li><a href="#dashboard">Dev Dashboard</a></li>
+    <li><a href="#how">How it Works</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#setup">Setup</a></li>
+  </ul>
+
+  <a href="https://github.com/ryadavtmc/zen-node" class="nav-cta" target="_blank" rel="noopener">View on GitHub</a>
+
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-nav" id="mobile-nav">
+  <a href="#screenshot">Marketplace</a>
+  <a href="#dashboard">Dev Dashboard</a>
+  <a href="#how">How it Works</a>
+  <a href="#privacy">Privacy</a>
+  <a href="#setup">Setup</a>
+  <a href="https://github.com/ryadavtmc/zen-node" target="_blank" rel="noopener">GitHub →</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🧠 Nepal US Hackathon 2026</div>
+  <h1>
+    Stop burnout before it starts.<br>
+    <span class="g">Code with clarity, not exhaustion.</span>
+  </h1>
+  <p>
+  <div class="hero-btns">
+    <a href="#setup" class="btn btn-fill">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.66.56 4.223.71 2.603.882 1.013 1.459 0 2.03v14c0 .369.399.63.74.494 1.09-.44 2.47-.818 3.622-.93C5.944 15.45 7.3 15.7 8 16.5c.7-.8 2.056-1.05 3.638-.906 1.152.112 2.532.49 3.622.93.34.136.74-.125.74-.494v-14c-1.013-.57-2.603-1.148-4.223-1.32C10.34.56 8.985.936 8 1.783z"/></svg>
+      Install Extension
+    </a>
+    <a href="https://github.com/ryadavtmc/zen-node" class="btn btn-outline" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View Source
+    </a>
+  </div>
+
+  <div class="pills">
+    <div class="pill pill-flow">🟢 Flow · 0–30</div>
+    <div class="pill pill-friction">🟡 Friction · 31–60</div>
+    <div class="pill pill-fatigue">🟠 Fatigue · 61–80</div>
+    <div class="pill pill-overload">🔴 Overload · 81–100</div>
+  </div>
+</div>
+
+<!-- MARKETPLACE SCREENSHOT -->
+<div class="screen-section fade" id="screenshot">
+  <p class="screen-label">Live in the VS Code Marketplace</p>
+  <div class="screen-wrap">
+    <div class="chrome">
+      <div class="dots">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="url-bar">🔒 marketplace.visualstudio.com · zennode.zennode · v0.1.0</div>
+    </div>
+    <div class="screen-img">
+      <img
+        src="images/marketplace-screenshot.png"
+        alt="ZenNode VS Code Marketplace page"
+        onerror="this.parentElement.innerHTML='<div class=\'no-img\'><svg width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg><p>Save the screenshot to</p><code>docs/images/marketplace-screenshot.png</code></div>'"
+      />
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- DEVELOPER DASHBOARD SCREENSHOTS -->
+<div class="screen-section fade" id="dashboard">
+  <p class="screen-label">Live Developer Dashboard</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="screen-wrap">
+      <div class="chrome">
+        <div class="dots">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+        </div>
+        <div class="url-bar" style="font-size:11px">🔒 ZenNode · Live Dashboard</div>
+      </div>
+      <div class="screen-img">
+        <img
+          src="images/developer-dashboard-1.png"
+          alt="ZenNode developer dashboard — score gauge and metric bars"
+          onerror="this.parentElement.innerHTML='<div class=\'no-img\'><p>developer-dashboard-1.png</p></div>'"
+        />
+      </div>
+    </div>
+    <div class="screen-wrap">
+      <div class="chrome">
+        <div class="dots">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+        </div>
+        <div class="url-bar" style="font-size:11px">🔒 ZenNode · Live Dashboard</div>
+      </div>
+      <div class="screen-img">
+        <img
+          src="images/developer-dashboard-2.png"
+          alt="ZenNode developer dashboard — session timeline and state distribution"
+          onerror="this.parentElement.innerHTML='<div class=\'no-img\'><p>developer-dashboard-2.png</p></div>'"
+        />
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--muted)">
+    Updates live every 5 seconds &nbsp;·&nbsp; Runs 100% locally &nbsp;·&nbsp; <span style="color:var(--green)">No data leaves your machine</span>
+  </p>
+</div>
+
+<hr>
+
+<!-- 3 HIGHLIGHTS -->
+<div class="highlights fade">
+  <div class="hl-cell">
+    <span class="hl-icon">🧮</span>
+    <div class="hl-title">100% local scoring</div>
+    <div class="hl-desc">The cognitive load algorithm runs entirely inside the extension. Your code never leaves your machine. No API key required to start.</div>
+  </div>
+  <div class="hl-cell">
+    <span class="hl-icon">⚡</span>
+    <div class="hl-title">5-second feedback loop</div>
+    <div class="hl-desc">Behavioral signals are sampled every 5 seconds, smoothed with EMA (α=0.6), and classified into one of four states — instantly.</div>
+  </div>
+  <div class="hl-cell">
+    <span class="hl-icon">🔒</span>
+    <div class="hl-title">Zero telemetry</div>
+    <div class="hl-desc">No analytics, no crash reporting, no phone-home. ZenNode cannot phone home because it has no such code. Verify it yourself on GitHub.</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- HOW IT WORKS -->
+<div class="split fade" id="how">
+  <div>
+    <div class="split-label">How it Works</div>
+    <h2>Behavior → Score → Action.<br>Every 5 seconds.</h2>
+    <p>ZenNode watches 6 passive behavioral signals — keystrokes, backspaces, tab switches, undos, idle time, pastes — and computes a weighted cognitive load score using a transparent formula.</p>
+    <p>No surveys. No wearables. No interruptions in flow state.</p>
+    <div class="formula">S = 0.25·SwitchRate + 0.20·ErrorRate<br>  + 0.25·UndoRate + 0.15·IdleRatio<br>  + 0.15·PasteRatio</div>
+  </div>
+  <div class="split-visual">
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">SwitchRate</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:78%;background:var(--orange)"></div></div>
+      <span class="sv-val">78</span>
+    </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">ErrorRate</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:42%;background:var(--amber)"></div></div>
+      <span class="sv-val">42</span>
+    </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">UndoRate</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:91%;background:var(--red)"></div></div>
+      <span class="sv-val">91</span>
+    </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">IdleRatio</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:15%;background:var(--green)"></div></div>
+      <span class="sv-val">15</span>
+    </div>
+    <div class="sv-row">
+      <span class="sv-label" style="color:var(--muted)">PasteRatio</span>
+      <div class="sv-bar"><div class="sv-fill" style="width:60%;background:var(--amber)"></div></div>
+      <span class="sv-val">60</span>
+    </div>
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="color:var(--muted);font-size:12px">Cognitive Load Score</span>
+      <span style="font-size:22px;font-weight:800;color:var(--red)">87 · 🔴 Overload</span>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- PRIVACY -->
+<div class="privacy-section fade" id="privacy">
+  <div class="section-label">Privacy</div>
+  <h2>Designed to be trusted.</h2>
+  <p>Mental health tooling only works if developers trust it. Every guarantee below is enforced by the code — not a policy document.</p>
+
+  <table class="privacy-table">
+    <thead>
+      <tr>
+        <th>Guarantee</th>
+        <th>How It's Enforced</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;Scoring runs locally</td>
+        <td><code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">src/scorer.ts</code> runs inside the extension process — no data leaves for cognitive scoring</td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;Counts only, never content</td>
+        <td><code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">traceCollector.ts</code> records <em>how many</em> keystrokes, never <em>what</em> you typed</td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;LLM sees metadata, not code</td>
+        <td>The AI receives only anonymized numbers — e.g. <code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">"tabSwitches: 18, undos: 12"</code></td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;Team sync is opt-in</td>
+        <td>Cloud sync never activates unless you explicitly connect. Sessions use a random <code style="font-family:'SF Mono',monospace;font-size:12px;color:var(--purple)">anonymous_id</code></td>
+      </tr>
+      <tr>
+        <td><span class="check">✓</span> &nbsp;No telemetry, ever</td>
+        <td>ZenNode cannot phone home — it has no analytics, no crash reporter, no such code</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<!-- SETUP -->
+<div class="setup-section fade" id="setup">
+  <div class="section-label">Get Started</div>
+  <h2>Up and running in 2 minutes.</h2>
+  <p>VS Code ≥ 1.85 &nbsp;·&nbsp; Node.js ≥ 18 &nbsp;·&nbsp; Python ≥ 3.10 (cloud only)</p>
+
+  <pre><span class="c"># Clone and install</span>
+<span class="k">git clone</span> <span class="s">https://github.com/ryadavtmc/zen-node.git</span>
+<span class="k">cd</span> zen-node &amp;&amp; <span class="k">npm install</span>
+
+<span class="c"># Build &amp; install the extension</span>
+<span class="k">npm run compile</span> &amp;&amp; <span class="k">vsce package</span>
+<span class="k">code --install-extension</span> zennode-0.1.0.vsix
+
+<span class="c"># Optional: start the cloud backend</span>
+<span class="k">cd</span> cloud &amp;&amp; pip install -r requirements.txt
+<span class="k">uvicorn</span> main:app --port 8421</pre>
+
+  <div style="margin-top:28px">
+    <a href="https://github.com/ryadavtmc/zen-node" class="btn btn-outline" target="_blank" rel="noopener" style="display:inline-flex">
+      Full documentation on GitHub →
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/ryadavtmc/zen-node" target="_blank" rel="noopener">GitHub</a>
+    <a href="#screenshot">Marketplace</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#setup">Setup</a>
+  </div>
+  <p>MIT License &nbsp;·&nbsp; ZenNode v0.1.0 &nbsp;·&nbsp; Nepal US Hackathon 2026</p>
+  <p style="margin-top:8px;font-size:12px;color:#484f58">
+    In 2026, your IDE catches bugs in your code. ZenNode catches cracks in your mental health — before they become breakdowns.
+  </p>
+</footer>
+
+<script>
+  // Hamburger
+  const btn = document.getElementById('hamburger');
+  const nav = document.getElementById('mobile-nav');
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('open');
+    nav.classList.toggle('open');
+  });
+  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    btn.classList.remove('open');
+    nav.classList.remove('open');
+  }));
+
+  // Active nav
+  const links = document.querySelectorAll('.nav-links a');
+  const sections = document.querySelectorAll('[id]');
+  new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.toggle('active', l.hash === '#' + e.target.id));
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' }).observe(...sections);
+
+  // Fade-in
+  new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.07 }).observe = (() => {
+    const io = new IntersectionObserver((entries, obs) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
+      });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.fade').forEach(el => io.observe(el));
+    return io.observe.bind(io);
+  })();
+</script>
+</body>
+</html>

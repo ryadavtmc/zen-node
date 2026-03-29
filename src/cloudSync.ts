@@ -13,6 +13,7 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 import * as http from 'http';
 import { SessionSummary } from './sessionStore';
+import { BehavioralSnapshot, CognitiveReport } from './types';
 
 const SECRET_KEY_TOKEN    = 'zn_token';
 const SECRET_KEY_ANON_ID  = 'zn_anon_id';
@@ -104,6 +105,78 @@ export class CloudSyncService {
             return { ok: false, error: res.body?.detail ?? 'Invalid invite code' };
         }
         return { ok: true, teamName: res.body.name };
+    }
+
+    // ── LLM Intervention ────────────────────────────────────────────────────
+
+    async requestIntervention(
+        snapshot: BehavioralSnapshot,
+        report: CognitiveReport,
+    ): Promise<string | null> {
+        const token = await this._secrets.get(SECRET_KEY_TOKEN);
+        if (!token) { return null; }
+
+        const m = report.metrics;
+        const res = await this._post(
+            this.getCloudUrl(),
+            '/api/v1/intervention',
+            {
+                score:            report.score,
+                state:            report.state,
+                switch_rate:      m.switchRate,
+                error_rate:       m.errorRate,
+                undo_rate:        m.undoRate,
+                idle_ratio:       m.idleRatio,
+                paste_ratio:      m.pasteRatio,
+                keystrokes:       snapshot.keystrokes,
+                backspaces:       snapshot.backspaces,
+                tab_switches:     snapshot.tabSwitches,
+                undos:            snapshot.undos,
+                idle_seconds:     snapshot.idleMs / 1000,
+                duration_seconds: snapshot.durationMs / 1000,
+                pasted_chars:     snapshot.pastedChars,
+                total_chars:      snapshot.totalChars,
+            },
+            token,
+        );
+
+        if (res.ok && res.body?.intervention) {
+            return res.body.intervention as string;
+        }
+        return null;
+    }
+
+    async syncLiveSession(summary: {
+        sessionId: string;
+        startedAt: string;
+        avgScore: number;
+        maxScore: number;
+        overloadCount: number;
+        flowSeconds: number;
+        frictionSeconds: number;
+        fatigueSeconds: number;
+        overloadSeconds: number;
+        snapshotCount: number;
+    }): Promise<boolean> {
+        const token  = await this._secrets.get(SECRET_KEY_TOKEN);
+        const anonId = await this._secrets.get(SECRET_KEY_ANON_ID);
+        if (!token || !anonId) { return false; }
+
+        const res = await this._post(this.getCloudUrl(), '/sync/session', {
+            anonymous_user_id: anonId,
+            session_id:        summary.sessionId,
+            session_date:      summary.startedAt.slice(0, 10),
+            avg_score:         summary.avgScore,
+            max_score:         summary.maxScore,
+            overload_count:    summary.overloadCount,
+            flow_seconds:      summary.flowSeconds,
+            friction_seconds:  summary.frictionSeconds,
+            fatigue_seconds:   summary.fatigueSeconds,
+            overload_seconds:  summary.overloadSeconds,
+            snapshot_count:    summary.snapshotCount,
+        }, token);
+
+        return res.ok;
     }
 
     async disconnect(): Promise<void> {
