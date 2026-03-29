@@ -15,11 +15,12 @@
 // ============================================================================
 
 import * as vscode from 'vscode';
+import { THRESHOLD_FRICTION_MAX } from './scorer';
 
 // ── Hysteresis threshold ────────────────────────────────────────────────────
-// Backend triggers shift at ≥ 80. We revert only when score drops below 60
-// to prevent rapid toggling between 78↔82.
-const REVERT_THRESHOLD = 60;
+// Revert when score drops back into friction/flow territory.
+// Tied to THRESHOLD_FRICTION_MAX so it stays in sync with scorer thresholds.
+const REVERT_THRESHOLD = THRESHOLD_FRICTION_MAX;
 
 // ── Warm Amber Palette ──────────────────────────────────────────────────────
 // Carefully tuned warm tones — calming, not aggressive.
@@ -108,6 +109,36 @@ export class ThemeShifter implements vscode.Disposable {
     /** Whether the warm-amber overlay is currently active */
     get isShifted(): boolean {
         return this._isShifted;
+    }
+
+    /**
+     * Call once on extension activation to detect and clean up any amber colors
+     * left over from a previous session that didn't deactivate cleanly (e.g. crash,
+     * forced window reload). Checks if any of our override keys are currently set
+     * in workbench.colorCustomizations and strips them if so.
+     */
+    async recoverStuckTheme(): Promise<void> {
+        const workbenchConfig = vscode.workspace.getConfiguration('workbench');
+        const currentColors: Record<string, string> =
+            workbenchConfig.get('colorCustomizations') ?? {};
+
+        const isStuck = OVERRIDE_KEYS.some(key => currentColors[key] !== undefined);
+        if (!isStuck) { return; }
+
+        // Amber colors are present but _isShifted is false — leftover from crash/reload.
+        // Force-remove all our keys.
+        const cleaned: Record<string, string> = { ...currentColors };
+        for (const key of OVERRIDE_KEYS) {
+            delete cleaned[key];
+        }
+
+        await workbenchConfig.update(
+            'colorCustomizations',
+            Object.keys(cleaned).length > 0 ? cleaned : undefined,
+            vscode.ConfigurationTarget.Workspace
+        );
+
+        console.log('[ZenNode] Cleaned up stuck warm-amber theme from previous session.');
     }
 
     // ── Main API ────────────────────────────────────────────────────────────

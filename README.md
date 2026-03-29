@@ -136,13 +136,28 @@ API docs: `http://127.0.0.1:8421/docs`
 3. Create or join a team using the invite code
 4. Enable LLM in VS Code settings: set `zennode.enableLLM` to `true`
 
+**Demo developer account (for testing):**
+
+| Field | Value |
+|---|---|
+| Email | `alex@gmail.com` |
+| Password | `Lion@14321` |
+| Team invite code | `ZEN-DEMO01` |
+
 ---
 
 ### 4. Manager Dashboard
 
 Open `http://127.0.0.1:8421/` in your browser and log in with your manager account.
 
-To create a manager account:
+**Demo credentials (for testing):**
+
+| Field | Value |
+|---|---|
+| Email | `manager@zennode.dev` |
+| Password | `password123` |
+
+To create your own manager account:
 1. Sign up at `POST /auth/signup`
 2. Create a team at `POST /teams/create` — you become the manager automatically
 3. Share the invite code with your developers

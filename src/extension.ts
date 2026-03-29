@@ -71,7 +71,7 @@ const RECOVERY_MESSAGES = [
 // Activation
 // ============================================================================
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
     console.log('[ZenNode] Activating...');
 
     const cfg = getConfig();
@@ -89,6 +89,9 @@ export function activate(context: vscode.ExtensionContext): void {
     themeShifter   = new ThemeShifter();
 
     context.subscriptions.push(traceCollector, zenBar, themeShifter);
+
+    // ── Clean up any amber theme left over from a crash/forced reload ───────
+    await themeShifter.recoverStuckTheme();
 
     // ── Restore EMA from last session so score doesn't cold-start ──────────
     const savedEma = sessionStore.savedEmaScore;
