@@ -34,6 +34,7 @@ let themeShifter: ThemeShifter;
 let mainLoopInterval: ReturnType<typeof setInterval> | null = null;
 let isTrackingEnabled = true;
 let lastReport: CognitiveReport | null = null;
+let tickCount = 0;
 
 // ── Notification state ──────────────────────────────────────────────────────
 let lastNotificationTime = 0;
@@ -172,6 +173,15 @@ async function runOneTick(): Promise<void> {
         updateDashboard(report);
 
         await handleCognitiveState(report);
+
+        // Auto-sync live session to manager dashboard every 10 ticks
+        tickCount++;
+        if (tickCount % 10 === 0 && await cloudSync.isConnected()) {
+            const liveSummary = sessionStore.getSummary();
+            if (liveSummary.snapshotCount > 0) {
+                cloudSync.syncLiveSession(liveSummary).catch(() => {});
+            }
+        }
 
         // After every 3 completed sessions, nudge to connect (if not already)
         await maybePromptConnect();

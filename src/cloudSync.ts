@@ -146,6 +146,39 @@ export class CloudSyncService {
         return null;
     }
 
+    async syncLiveSession(summary: {
+        sessionId: string;
+        startedAt: string;
+        avgScore: number;
+        maxScore: number;
+        overloadCount: number;
+        flowSeconds: number;
+        frictionSeconds: number;
+        fatigueSeconds: number;
+        overloadSeconds: number;
+        snapshotCount: number;
+    }): Promise<boolean> {
+        const token  = await this._secrets.get(SECRET_KEY_TOKEN);
+        const anonId = await this._secrets.get(SECRET_KEY_ANON_ID);
+        if (!token || !anonId) { return false; }
+
+        const res = await this._post(this.getCloudUrl(), '/sync/session', {
+            anonymous_user_id: anonId,
+            session_id:        summary.sessionId,
+            session_date:      summary.startedAt.slice(0, 10),
+            avg_score:         summary.avgScore,
+            max_score:         summary.maxScore,
+            overload_count:    summary.overloadCount,
+            flow_seconds:      summary.flowSeconds,
+            friction_seconds:  summary.frictionSeconds,
+            fatigue_seconds:   summary.fatigueSeconds,
+            overload_seconds:  summary.overloadSeconds,
+            snapshot_count:    summary.snapshotCount,
+        }, token);
+
+        return res.ok;
+    }
+
     async disconnect(): Promise<void> {
         await this._secrets.delete(SECRET_KEY_TOKEN);
         // Keep anonymous_id — if they reconnect later, their history links up

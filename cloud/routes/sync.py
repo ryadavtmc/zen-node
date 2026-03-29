@@ -35,14 +35,25 @@ def sync_session(
             detail="anonymous_user_id does not match your account",
         )
 
-    # Prevent duplicate syncs for the same session_id
+    # Upsert: update if session_id already exists, insert if not
     existing = (
         db.query(SessionSummary)
         .filter(SessionSummary.session_id == body.session_id)
         .first()
     )
     if existing:
-        return SyncResponse(accepted=0, message="Session already synced")
+        # Only update if this sync has more snapshots (fresher data)
+        if body.snapshot_count >= existing.snapshot_count:
+            existing.avg_score        = body.avg_score
+            existing.max_score        = max(body.max_score, existing.max_score)
+            existing.overload_count   = max(body.overload_count, existing.overload_count)
+            existing.flow_seconds     = body.flow_seconds
+            existing.friction_seconds = body.friction_seconds
+            existing.fatigue_seconds  = body.fatigue_seconds
+            existing.overload_seconds = body.overload_seconds
+            existing.snapshot_count   = body.snapshot_count
+            db.commit()
+        return SyncResponse(accepted=1, message="Session summary updated")
 
     summary = SessionSummary(
         anonymous_user_id=body.anonymous_user_id,

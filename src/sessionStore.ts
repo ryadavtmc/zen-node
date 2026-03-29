@@ -151,7 +151,7 @@ export class SessionStore {
             themeShift: report.themeShift,
         });
 
-        if (report.state === 'overload' && session.lastState !== 'overload') {
+        if (report.state === 'overload') {
             session.overloadCount += 1;
         }
         if (report.themeShift) {
