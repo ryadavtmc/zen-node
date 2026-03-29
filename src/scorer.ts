@@ -23,17 +23,17 @@ const IDLE_RATIO_CAP = 80.0;   // idle % → 100
 const PASTE_RATIO_CAP = 90.0;   // paste % → 100
 
 // ── State thresholds ───────────────────────────────────────────────────────
-// export const THRESHOLD_FLOW_MAX = 10;  // TEST: lowered from 30
-// export const THRESHOLD_FRICTION_MAX = 20;  // TEST: lowered from 60
-// export const THRESHOLD_FATIGUE_MAX = 30;  // TEST: lowered from 80
-// export const THRESHOLD_THEME_SHIFT = 30;  // TEST: lowered from 80
-// export const THRESHOLD_LLM_TRIGGER = 30;  // TEST: lowered from 80
+export const THRESHOLD_FLOW_MAX = 10;  // TEST: lowered from 30
+export const THRESHOLD_FRICTION_MAX = 20;  // TEST: lowered from 60
+export const THRESHOLD_FATIGUE_MAX = 30;  // TEST: lowered from 80
+export const THRESHOLD_THEME_SHIFT = 30;  // TEST: lowered from 80
+export const THRESHOLD_LLM_TRIGGER = 30;  // TEST: lowered from 80
 
-export const THRESHOLD_FLOW_MAX = 30;
-export const THRESHOLD_FRICTION_MAX = 60;
-export const THRESHOLD_FATIGUE_MAX = 80;
-export const THRESHOLD_THEME_SHIFT = 80;
-export const THRESHOLD_LLM_TRIGGER = 80;
+// export const THRESHOLD_FLOW_MAX = 30;
+// export const THRESHOLD_FRICTION_MAX = 60;
+// export const THRESHOLD_FATIGUE_MAX = 80;
+// export const THRESHOLD_THEME_SHIFT = 80;
+// export const THRESHOLD_LLM_TRIGGER = 80;
 
 // ── EMA smoothing ──────────────────────────────────────────────────────────
 const EMA_ALPHA = 0.6;
