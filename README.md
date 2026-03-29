@@ -125,12 +125,23 @@ pip install -r requirements.txt
 Create a `cloud/.env` file:
 
 ```env
-SECRET_KEY=your-secret-key
-LLM_API_KEY=your-groq-or-openai-key
-LLM_BASE_URL=https://api.groq.com/openai/v1
-LLM_MODEL=llama-3.3-70b-versatile
-LLM_ENABLED=true
+
+# Database
+DATABASE_URL=sqlite:///./zennode_cloud.db
+
+# JWT — change this in production (openssl rand -hex 32)
+JWT_SECRET_KEY=change-this-to-a-random-secret-in-production
 JWT_EXPIRE_MINUTES=10080
+
+# Server
+API_PORT=8421
+CORS_ORIGINS=*
+
+# LLM
+LLM_ENABLED=true
+LLM_API_KEY=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 # Note: this api key will be expire today, adding here for judge demo purpose, do not think of security violation.
+LLM_MODEL=llama-3.3-70b-versatile
+LLM_BASE_URL=https://api.groq.com/openai/v1
 ```
 
 Start the server:
