@@ -316,4 +316,4 @@ zen-node/
 
 ---
 
-MIT License · Built for the Mental Health Hackathon 2026
+MIT License · Built for the Nepal US Hackathon 2026
