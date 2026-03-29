@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZenNode — Cognitive Load Monitor for VS Code</title>
-  <meta name="description" content="The first IDE layer that listens to your brain, not just your keyboard. Real-time cognitive load monitoring for VS Code." />
+  <meta name="description" content="Stop burnout before it starts. Code with clarity, not exhaustion. Real-time cognitive load monitoring for VS Code." />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -570,7 +570,7 @@
 
   <ul class="nav-links">
     <li><a href="#screenshot">Marketplace</a></li>
-    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#dashboard">Dev Dashboard</a></li>
     <li><a href="#how">How it Works</a></li>
     <li><a href="#privacy">Privacy</a></li>
     <li><a href="#setup">Setup</a></li>
@@ -585,7 +585,7 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <a href="#screenshot">Marketplace</a>
-  <a href="#dashboard">Dashboard</a>
+  <a href="#dashboard">Dev Dashboard</a>
   <a href="#how">How it Works</a>
   <a href="#privacy">Privacy</a>
   <a href="#setup">Setup</a>
@@ -596,11 +596,11 @@
 <div class="hero">
   <div class="hero-tag">🧠 Nepal US Mental Health Hackathon 2026</div>
   <h1>
-    Your IDE monitors your code.<br>
-    <span class="g">ZenNode monitors you.</span>
+    Stop burnout before it starts.<br>
+    <span class="g">Code with clarity, not exhaustion.</span>
   </h1>
   <p>
-    Real-time cognitive load detection inside VS Code — using behavioral signals, not surveys. Catches burnout before it catches you.
+    Stop burnout before it starts. Code with clarity, not exhaustion.
   </p>
   <div class="hero-btns">
     <a href="#setup" class="btn btn-fill">
@@ -645,28 +645,47 @@
 
 <hr>
 
-<!-- DASHBOARD SCREENSHOT -->
+<!-- DEVELOPER DASHBOARD SCREENSHOTS -->
 <div class="screen-section fade" id="dashboard">
-  <p class="screen-label">Team Manager Dashboard</p>
-  <div class="screen-wrap">
-    <div class="chrome">
-      <div class="dots">
-        <div class="dot dot-r"></div>
-        <div class="dot dot-y"></div>
-        <div class="dot dot-g"></div>
+  <p class="screen-label">Live Developer Dashboard</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="screen-wrap">
+      <div class="chrome">
+        <div class="dots">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+        </div>
+        <div class="url-bar" style="font-size:11px">🔒 ZenNode · Live Dashboard</div>
       </div>
-      <div class="url-bar">🔒 127.0.0.1:8421/dashboard · ZenNode Manager Dashboard</div>
+      <div class="screen-img">
+        <img
+          src="images/developer-dashboard-1.png"
+          alt="ZenNode developer dashboard — score gauge and metric bars"
+          onerror="this.parentElement.innerHTML='<div class=\'no-img\'><p>developer-dashboard-1.png</p></div>'"
+        />
+      </div>
     </div>
-    <div class="screen-img">
-      <img
-        src="images/dashboard-screenshot.png"
-        alt="ZenNode Manager Dashboard showing team cognitive load overview"
-        onerror="this.parentElement.innerHTML='<div class=\'no-img\'><svg width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg><p>Image not found</p><code>docs/images/dashboard-screenshot.png</code></div>'"
-      />
+    <div class="screen-wrap">
+      <div class="chrome">
+        <div class="dots">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+        </div>
+        <div class="url-bar" style="font-size:11px">🔒 ZenNode · Live Dashboard</div>
+      </div>
+      <div class="screen-img">
+        <img
+          src="images/developer-dashboard-2.png"
+          alt="ZenNode developer dashboard — session timeline and state distribution"
+          onerror="this.parentElement.innerHTML='<div class=\'no-img\'><p>developer-dashboard-2.png</p></div>'"
+        />
+      </div>
     </div>
   </div>
   <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--muted)">
-    Managers see aggregated team health — never individual scores or code. &nbsp;·&nbsp; <span style="color:var(--green)">Privacy enforced by design.</span>
+    Updates live every 5 seconds &nbsp;·&nbsp; Runs 100% locally &nbsp;·&nbsp; <span style="color:var(--green)">No data leaves your machine</span>
   </p>
 </div>
 

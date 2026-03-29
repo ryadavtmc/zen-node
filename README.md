@@ -1,5 +1,5 @@
 <p align="center">
-  <strong>The first IDE layer that listens to your brain, not just your keyboard.</strong><br>
+  <strong>Stop burnout before it starts. Code with clarity, not exhaustion.</strong><br>
   Real-time cognitive load monitoring for VS Code — protecting developer mental health with behavioral science and AI.
 </p>
 

@@ -1,7 +1,7 @@
 {
     "name": "zennode",
     "displayName": "ZenNode — Cognitive Load Monitor",
-    "description": "The first IDE layer that listens to your brain, not just your keyboard. Monitors cognitive load in real-time to protect developer mental health.",
+    "description": "Stop burnout before it starts. Code with clarity, not exhaustion. Real-time cognitive load monitoring for VS Code.",
     "version": "0.1.0",
     "publisher": "zennode",
     "license": "MIT",
