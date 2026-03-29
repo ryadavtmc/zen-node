@@ -13,6 +13,10 @@
   <img src="https://img.shields.io/badge/Hackathon-Mental%20Health%20🧠💚-ff69b4?style=flat-square" alt="Mental Health Hackathon">
 </p>
 
+<p align="center">
+  <a href="https://ryadavtmc.github.io/zen-node/"><strong>🌐 Live Demo → ryadavtmc.github.io/zen-node</strong></a>
+</p>
+
 ---
 
 > *"We spend billions building tools that monitor the health of servers, databases, and APIs. ZenNode asks a simple question: what if we monitored the health of the developer too? Not with surveys. Not with annual check-ins. But in real-time, inside the tool they use 8 hours a day, using the behavioral signals their brain is already broadcasting. Because the most expensive bug in production isn't a null pointer — it's a burned-out developer who stopped caring enough to catch it."*
