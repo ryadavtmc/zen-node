@@ -91,7 +91,7 @@ npm run compile
 Then either:
 - **Dev mode:** Press `F5` in VS Code → Extension Development Host launches
 - **Install VSIX:** `vsce package` → `code --install-extension zennode-0.1.0.vsix`
-If command not found: vsce
+- If command not found: vsce
 - ** Instal vsce:   vsce npm install -g vsce
 
 The Zen Bar appears in the status bar: **🧠 ZenNode: Flow (0) 🟢**
