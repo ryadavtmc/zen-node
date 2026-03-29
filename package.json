@@ -1,6 +1,6 @@
 {
     "name": "zennode-cognitive",
-    "displayName": "ZenNode - Cognitive Load Monitor",
+    "displayName": "ZenNode - Focus & Wellbeing",
     "description": "Stop burnout before it starts. Code with clarity, not exhaustion. Real-time cognitive load monitoring for VS Code.",
     "version": "0.1.1",
     "publisher": "zennode",
