@@ -91,8 +91,8 @@ function _pushStoreData(store: SessionStore): void {
     currentPanel.webview.postMessage({
         command: 'sessionData',
         timeline: store.getTimeline(60),
-        summary:  store.getSummary(),
-        history:  store.getHistory().slice(0, 10),
+        summary: store.getSummary(),
+        history: store.getHistory().slice(0, 10),
     });
 }
 
@@ -354,6 +354,13 @@ function getDashboardHtml(): string {
         font-family: inherit;
     }
 
+    .chart-axis-label {
+        fill: rgba(255, 255, 255, 0.25);
+        font-size: 10px;
+        font-family: inherit;
+        letter-spacing: 0.08em;
+    }
+
     .chart-area {
         fill: url(#areaGradient);
         opacity: 0.4;
@@ -512,7 +519,7 @@ function getDashboardHtml(): string {
 
 <!-- ━━ Waiting State ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div class="waiting" id="waitingState">
-    <div class="waiting-icon">🧠</div>
+    <div class="waiting-icon"></div>
     <div class="waiting-text">Waiting for first cognitive report...<br>Keep coding — data arrives every 30 seconds.</div>
 </div>
 
@@ -522,7 +529,7 @@ function getDashboardHtml(): string {
     <!-- Header -->
     <div class="header">
         <div class="header-left">
-            <span class="header-logo">🧠</span>
+            <span class="header-logo"></span>
             <div>
                 <div class="header-title">ZenNode Dashboard</div>
                 <div class="header-sub">REAL-TIME COGNITIVE MONITOR</div>
@@ -603,7 +610,7 @@ function getDashboardHtml(): string {
         <div class="card-title">Session Timeline</div>
         <div class="chart-wrap" id="chartWrap">
             <div class="chart-empty" id="chartEmpty">Collecting data points...</div>
-            <svg class="chart-svg" id="chartSvg" style="display:none;" viewBox="0 0 700 260" preserveAspectRatio="none">
+            <svg class="chart-svg" id="chartSvg" style="display:none;" viewBox="-24 0 724 260" preserveAspectRatio="none">
                 <defs>
                     <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%"   stop-color="#4EC9B0" stop-opacity="0.3"/>
@@ -619,11 +626,13 @@ function getDashboardHtml(): string {
                 <line class="threshold-line threshold-30" x1="0" y1="182" x2="700" y2="182"/>
                 <line class="threshold-line threshold-60" x1="0" y1="104" x2="700" y2="104"/>
                 <line class="threshold-line threshold-80" x1="0" y1="52"  x2="700" y2="52"/>
+                <!-- Y-axis label -->
+                <text class="chart-axis-label" transform="rotate(-90)" x="-130" y="-10" text-anchor="middle">COGNITIVE LOAD</text>
                 <!-- Labels -->
                 <text class="chart-label" x="4" y="178">30</text>
                 <text class="chart-label" x="4" y="100">60</text>
                 <text class="chart-label" x="4" y="48">80</text>
-                <text class="chart-label" x="4" y="16">100</text>
+                <text class="chart-label" style="fill:rgba(255,255,255,0.5);" x="4" y="16">100</text>
                 <text class="chart-label" x="4" y="256">0</text>
                 <!-- Dynamic elements added by JS -->
                 <path class="chart-area" id="chartArea" d=""/>
