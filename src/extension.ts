@@ -339,11 +339,13 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 }
             }
 
-            lastReport = null;
-            zenBar.update({
-                score: 0, state: 'flow', themeShift: false, intervention: null,
+            const clearedReport = {
+                score: 0, state: 'flow' as const, themeShift: false, intervention: null,
                 metrics: { switchRate: 0, errorRate: 0, undoRate: 0, idleRatio: 0, pasteRatio: 0 },
-            });
+            };
+            lastReport = null;
+            zenBar.update(clearedReport);
+            updateDashboard(clearedReport);
             vscode.window.showInformationMessage('ZenNode: Session reset. Fresh start! 🧘');
         })
     );
