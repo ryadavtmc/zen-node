@@ -1,8 +1,8 @@
 {
-    "name": "zennode",
-    "displayName": "ZenNode — Cognitive Load Monitor",
+    "name": "zennode-cognitive",
+    "displayName": "ZenNode - Focus & Wellbeing",
     "description": "Stop burnout before it starts. Code with clarity, not exhaustion. Real-time cognitive load monitoring for VS Code.",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "publisher": "zennode",
     "license": "MIT",
     "icon": "assets/icon.png",
@@ -109,6 +109,6 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/yourusername/zen-node"
+        "url": "https://github.com/ryadavtmc/zen-node"
     }
 }

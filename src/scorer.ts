@@ -110,10 +110,6 @@ export class CognitiveScorer {
     private _emaScore: number | null = null;
 
     score(snapshot: BehavioralSnapshot): CognitiveReport {
-        if (snapshot.keystrokes < MIN_KEYSTROKES) {
-            return this._neutralReport();
-        }
-
         const metrics = computeMetrics(snapshot);
         const rawScore = computeScore(metrics);
 

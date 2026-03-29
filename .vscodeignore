@@ -29,6 +29,12 @@ Thumbs.db
 .git/
 .gitignore
 
+# Claude Code
+.claude/
+
+# Docs (internal)
+docs/
+
 # Test and temp files
 test/
 tests/

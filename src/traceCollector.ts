@@ -44,7 +44,7 @@ export class TraceCollector implements vscode.Disposable {
     private _idleCheckInterval: ReturnType<typeof setInterval> | null = null;
 
     /** Milliseconds of no input before we start counting "idle" time */
-    private static readonly IDLE_THRESHOLD_MS = 3000;
+    private static readonly IDLE_THRESHOLD_MS = 1500;
 
     /** How often we check for idle accumulation */
     private static readonly IDLE_CHECK_INTERVAL_MS = 1000;
