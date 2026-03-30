@@ -162,14 +162,6 @@ API docs: `http://127.0.0.1:8421/docs`
 3. Create or join a team using the invite code
 4. Enable LLM in VS Code settings: set `zennode.enableLLM` to `true`
 
-**Demo developer account (for testing):**
-
-| Field | Value |
-|---|---|
-| Email | `alex@gmail.com` |
-| Password | `Lion@14321` |
-| Team invite code | `ZEN-DEMO01` |
-
 ---
 
 ### 4. Manager Dashboard
